@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import OpenAI from 'openai';
+import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions';
 
 export interface AgentContext<T = unknown> {
   input: T;
@@ -20,28 +20,36 @@ export interface HandoffConfig<T = unknown> {
 }
 
 export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
-  protected openai: OpenAI;
+  // Add apiKey declaration
+  protected apiKey: string;
+  // Add base URL for xAI API
+  protected baseURL: string = 'https://api.x.ai/v1';
   
   constructor(
     public name: string,
     public description: string,
-    protected apiKey: string,
     public inputSchema?: z.ZodSchema<TInput>,
     public outputSchema?: z.ZodSchema<TOutput>
   ) {
-    this.openai = new OpenAI({ apiKey });
+    // Set apiKey from environment
+    this.apiKey = process.env.GROK_API_KEY || '';
+    if (!this.apiKey) {
+      throw new Error('GROK_API_KEY not found in environment');
+    }
+    // Removed OpenAI initialization
   }
   
   abstract instructions(context: AgentContext<TInput>): string;
   
-  abstract tools(): OpenAI.ChatCompletionTool[];
+  abstract tools(): ChatCompletionTool[];
   
   handoffs(): HandoffConfig<TInput>[] {
     return [];
   }
   
   async execute(context: AgentContext<TInput>): Promise<TOutput> {
-    const messages: OpenAI.ChatCompletionMessageParam[] = [
+    console.log(`[BaseAgent] Executing ${this.name} using grok 4 model`);
+    const messages: ChatCompletionMessageParam[] = [
       {
         role: 'system',
         content: this.instructions(context),
@@ -57,7 +65,7 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
     const handoffs = this.handoffs();
     
     // Add handoff tools
-    const handoffTools: OpenAI.ChatCompletionTool[] = handoffs.map((handoff) => ({
+    const handoffTools: ChatCompletionTool[] = handoffs.map((handoff) => ({
       type: 'function' as const,
       function: {
         name: `handoff_to_${handoff.agent.name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -77,12 +85,28 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
     
     const allTools = [...tools, ...handoffTools];
     
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages,
-      tools: allTools.length > 0 ? allTools : undefined,
-      response_format: this.outputSchema ? { type: 'json_object' } : undefined,
+    // Use fetch to call xAI API
+    const apiResponse = await fetch(`${this.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'grok-4',
+        messages,
+        tools: allTools.length > 0 ? allTools : null,
+        response_format: this.outputSchema ? { type: 'json_object' } : undefined,
+        reasoning_effort: 'low',
+      }),
     });
+    
+    if (!apiResponse.ok) {
+      const errorData = await apiResponse.json();
+      throw new Error(errorData.error?.message || 'xAI API error');
+    }
+    
+    const response = await apiResponse.json();
     
     const message = response.choices[0].message;
     

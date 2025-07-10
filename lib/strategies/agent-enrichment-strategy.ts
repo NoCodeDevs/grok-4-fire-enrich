@@ -22,6 +22,7 @@ export class AgentEnrichmentStrategy {
     const email = row[emailColumn];
     console.log(`[AgentEnrichmentStrategy] Starting enrichment for email: ${email}`);
     console.log(`[AgentEnrichmentStrategy] Requested fields: ${fields.map(f => f.name).join(', ')}`);
+    console.log(`[AgentEnrichmentStrategy] Agent base powered by grok 4`);
     
     if (!email) {
       console.log(`[AgentEnrichmentStrategy] No email found in column: ${emailColumn}`);

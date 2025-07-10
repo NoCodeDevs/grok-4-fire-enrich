@@ -1,17 +1,18 @@
-# Fire Enrich
+# Grok 4 Fire Enrich
 
-A powerful AI-powered CSV enrichment tool that transforms basic contact lists into comprehensive business intelligence data using specialized AI agents, web scraping, and intelligent data extraction.
+A powerful AI-powered CSV enrichment tool that transforms basic contact lists into comprehensive business intelligence data using specialized AI agents powered by Grok 4, web scraping, and intelligent data extraction.
 
 ## Overview
 
-Fire Enrich is an advanced data enrichment platform that takes CSV files containing company email addresses and automatically enhances them with valuable business information. Built on a sophisticated multi-agent architecture, it leverages Firecrawl for web scraping and OpenAI GPT-4 for intelligent data extraction.
+Grok 4 Fire Enrich is an advanced data enrichment platform that takes CSV files containing company email addresses and automatically enhances them with valuable business information. Built on a sophisticated multi-agent architecture with agent base execution powered by Grok 4, it leverages Firecrawl for web scraping and OpenAI GPT-4 for intelligent data extraction.
 
 ## Architecture
 
 ### Core Components
 
 #### 1. Multi-Agent System
-Fire Enrich employs five specialized AI agents, each optimized for specific data extraction tasks:
+
+Grok 4 Fire Enrich employs five specialized AI agents (powered by Grok 4 base execution), each optimized for specific data extraction tasks:
 
 - **Company Research Agent**: Extracts company fundamentals (name, description, industry, employee count)
 - **Fundraising Intelligence Agent**: Discovers funding rounds, investors, and valuation data
@@ -47,18 +48,21 @@ Fire Enrich employs five specialized AI agents, each optimized for specific data
 ### User Flow
 
 #### Step 1: CSV Upload
+
 ```
-User uploads CSV → Parse with Papa Parse → Auto-detect email columns → 
+User uploads CSV → Parse with Papa Parse → Auto-detect email columns →
 Extract unique domains → Preview data structure
 ```
 
 #### Step 2: Field Configuration
+
 ```
 Select email column → Choose enrichment fields → Add custom fields →
 Toggle agent mode → Preview enrichment plan
 ```
 
 #### Step 3: Real-time Enrichment
+
 ```
 For each row:
 ├─ Extract company from email
@@ -71,6 +75,7 @@ For each row:
 ```
 
 #### Step 4: Export Results
+
 ```
 View enriched data → Click for details → Download CSV/JSON →
 Includes confidence scores and sources
@@ -85,39 +90,52 @@ Includes confidence scores and sources
 
 ### API Key Configuration
 
-Fire Enrich requires two API keys:
+Grok 4 Fire Enrich requires three API keys:
 
 #### 1. Firecrawl API Key
+
 - Sign up at [firecrawl.dev](https://firecrawl.dev)
 - Get your API key from the dashboard
 - Used for web scraping and search
 
 #### 2. OpenAI API Key
+
 - Sign up at [platform.openai.com](https://platform.openai.com)
 - Create an API key with GPT-4 access
 - Used for intelligent data extraction
 
+#### 3. Grok 4 API Key
+
+- Sign up at [x.ai/api](https://x.ai/api)
+- Get your Grok 4 API key
+- Used for agent base execution
+
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd hostedTools
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Configure environment variables:
+
 ```bash
 # Create .env.local file
 FIRECRAWL_API_KEY=your_firecrawl_key
 OPENAI_API_KEY=your_openai_key
+GROK_API_KEY=your_grok_4_key
 ```
 
 4. Run the development server:
+
 ```bash
 pnpm dev
 ```
@@ -126,30 +144,36 @@ pnpm dev
 
 ### Alternative: Browser-based API Keys
 
-If you prefer not to use environment variables, Fire Enrich supports entering API keys directly in the browser:
-1. Visit the Fire Enrich page
+If you prefer not to use environment variables, Grok 4 Fire Enrich supports entering API keys directly in the browser:
+
+1. Visit the Grok 4 Fire Enrich page
 2. Click "Enter API Keys" when prompted
 3. Keys are stored securely in localStorage
 
 ## Features
 
 ### Smart Email Detection
+
 - Regex-based email column detection
 - Domain extraction with edge case handling
 - Company name inference from email patterns
 
 ### Agent-Based Enrichment
+
 - Specialized agents for different data types
 - Dynamic agent selection based on requested fields
 - Parallel processing for efficiency
 
 ### Real-time Progress Tracking
+
 - Server-Sent Events for live updates
 - Animated cell population
 - Progress indicators and status messages
 
 ### Flexible Field Selection
+
 **Preset Fields:**
+
 - Company Name
 - Industry & Description
 - Employee Count
@@ -160,6 +184,7 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 - And more...
 
 **Custom Fields:**
+
 - Natural language field generation
 - AI interprets your requirements
 - Examples:
@@ -168,6 +193,7 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
   - "Find recent news mentions"
 
 ### Export Options
+
 - **CSV Format**: Original data + enriched columns
 - **JSON Format**: Complete metadata and structure
 - **Confidence Scores**: Data quality indicators
@@ -176,18 +202,21 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 ## Technical Details
 
 ### Performance Optimizations
+
 - Concurrent processing with rate limiting
 - Smart caching of search results
 - Deduplication of search queries
 - 1-second delay between rows (API protection)
 
 ### Error Handling
+
 - Graceful degradation on API failures
 - Retry logic for transient errors
 - Clear error messages in UI
 - Fallback to basic extraction mode
 
 ### Data Quality
+
 - Multi-source validation
 - Confidence scoring algorithm
 - Source diversity tracking
@@ -198,12 +227,14 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 ### Agent Mode vs Traditional Mode
 
 **Agent Mode** (Recommended):
+
 - Uses specialized AI agents
 - Better accuracy for specific fields
 - Higher quality extraction
 - Slightly slower processing
 
 **Traditional Mode**:
+
 - Direct GPT-4 extraction
 - Faster processing
 - Good for simple fields
@@ -229,16 +260,19 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 ### Common Issues
 
 1. **"No API Keys Found"**
+
    - Check environment variables
    - Try browser-based key entry
    - Verify key validity
 
 2. **Slow Enrichment**
+
    - Normal: ~5-15 seconds per row
    - Check API rate limits
    - Consider traditional mode
 
 3. **Missing Data**
+
    - Some companies have limited online presence
    - Check confidence scores
    - Review source URLs
@@ -266,6 +300,7 @@ If you prefer not to use environment variables, Fire Enrich supports entering AP
 ## Support
 
 For issues or questions:
+
 - Use this template: [https://github.com/mendableai/fire-enrich](https://github.com/mendableai/fire-enrich)
 - Check the [GitHub Issues](https://github.com/mendableai/fire-enrich/issues)
 - Review error messages and logs

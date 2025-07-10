@@ -226,10 +226,10 @@ export default function HomePage() {
       <div className="text-center pt-8 pb-6">
         <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[0.9] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
           <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-red-600 to-yellow-500 inline-flex justify-center items-center">
-            Fire Enrich
+            Grok 4 Fire Enrich
           </span>
           <span className="block leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
-            Drag, Drop, Enrich.
+            Powered by Firecrawl.
           </span>
         </h1>
         <p className="text-sm text-muted-foreground mt-3 opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:600ms] [animation-fill-mode:forwards]">

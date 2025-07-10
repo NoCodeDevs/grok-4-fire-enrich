@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
     const strategyName = 'AgentEnrichmentStrategy';
     
     console.log(`[STRATEGY] Using ${strategyName} - Advanced multi-agent architecture with specialized agents`);
+    console.log(`[STRATEGY] Agent base execution powered by grok 4`);
     const enrichmentStrategy = new AgentEnrichmentStrategy(
       openaiApiKey,
       firecrawlApiKey

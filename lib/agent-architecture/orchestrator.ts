@@ -69,6 +69,7 @@ export class AgentOrchestrator {
       if (onAgentProgress) {
         onAgentProgress(`Planning enrichment strategy for ${emailContext.companyNameGuess || emailContext.domain}`, 'info');
         onAgentProgress(`Agent pipeline: ${agentsToUse.map(a => a.replace('-agent', '').replace('-', ' ')).join(' → ')}`, 'info');
+        onAgentProgress(`Agent base powered by grok 4`, 'info');
       }
       
       // Step 3: Progressive enrichment

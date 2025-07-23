@@ -59,92 +59,94 @@ export default function HomePage() {
 
       </div>
 
-      <div className="text-center pt-12 pb-16 max-w-5xl mx-auto">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 mb-8 opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:100ms] [animation-fill-mode:forwards]">
-          <div className="w-2 h-2 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
-          <span className="text-sm font-medium text-purple-300">Powered by AI • Trusted by 10,000+ users</span>
+      <div className="text-center pt-16 pb-20 max-w-6xl mx-auto">
+        {/* Beautiful floating elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-1/4 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-40 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl animate-pulse [animation-delay:1s]"></div>
+          <div className="absolute bottom-20 left-1/3 w-28 h-28 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse [animation-delay:2s]"></div>
         </div>
 
         {/* Main Headline */}
-        <h1 className="text-[3rem] lg:text-[4.5rem] xl:text-[5rem] text-white font-bold tracking-tight leading-[0.9] mb-6 opacity-0 animate-fade-up [animation-duration:600ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-          <span className="block">Turn</span>
+        <h1 className="relative text-[3.5rem] lg:text-[5rem] xl:text-[6rem] text-white font-bold tracking-tight leading-[0.85] mb-8 opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
+          <span className="block">Transform</span>
           <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-[length:200%_100%] animate-gradient-x">
-            Email Lists
+            Contact Data
           </span>
-          <span className="block">Into Gold Mines</span>
+          <span className="block">Into Intelligence</span>
         </h1>
 
         {/* Subheadline */}
-        <p className="text-xl lg:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed opacity-0 animate-fade-up [animation-duration:600ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
-          Stop wasting time on cold outreach. <span className="text-white font-semibold">Enrich any CSV</span> with AI-powered contact intelligence in seconds. Get phone numbers, social profiles, company data, and more.
+        <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
+          Upload your CSV and watch as AI enriches every contact with <span className="text-white font-semibold">phone numbers</span>, <span className="text-white font-semibold">social profiles</span>, and <span className="text-white font-semibold">company intelligence</span> in seconds.
         </p>
 
-        {/* Value Props */}
-        <div className="flex flex-wrap justify-center gap-6 mb-12 opacity-0 animate-fade-up [animation-duration:600ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
-          <div className="flex items-center gap-2 text-gray-300">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-400 to-emerald-400 flex items-center justify-center">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
+        {/* Beautiful feature cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:600ms] [animation-fill-mode:forwards]">
+          <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-gray-900/50 to-gray-800/30 border border-gray-700/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">High Accuracy</h3>
+              <p className="text-gray-400 text-sm">Advanced AI algorithms ensure precise contact enrichment with reliable data sources.</p>
             </div>
-            <span className="font-medium">90%+ Match Rate</span>
           </div>
-          <div className="flex items-center gap-2 text-gray-300">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+
+          <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-gray-900/50 to-gray-800/30 border border-gray-700/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Lightning Speed</h3>
+              <p className="text-gray-400 text-sm">Process thousands of contacts in seconds with our optimized enrichment pipeline.</p>
             </div>
-            <span className="font-medium">Lightning Fast</span>
           </div>
-          <div className="flex items-center gap-2 text-gray-300">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
+
+          <div className="group relative p-6 rounded-2xl bg-gradient-to-br from-gray-900/50 to-gray-800/30 border border-gray-700/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300 hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">Privacy First</h3>
+              <p className="text-gray-400 text-sm">Your data stays secure with enterprise-grade encryption and privacy protection.</p>
             </div>
-            <span className="font-medium">100% Secure</span>
           </div>
         </div>
 
         {/* CTA Button */}
-        <div className="opacity-0 animate-fade-up [animation-duration:600ms] [animation-delay:800ms] [animation-fill-mode:forwards]">
+        <div className="opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:800ms] [animation-fill-mode:forwards]">
           <Button 
             size="lg" 
-            className="text-lg px-8 py-4 h-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+            className="text-xl px-12 py-6 h-auto bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 text-white border-0 shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-500 hover:scale-110 rounded-2xl font-semibold relative overflow-hidden group"
             onClick={() => {
               const uploadSection = document.querySelector('.bg-card');
               uploadSection?.scrollIntoView({ behavior: 'smooth' });
             }}
           >
-            Enrich My Contacts Now
-            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <span className="relative flex items-center gap-3">
+              Start Enriching
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </span>
           </Button>
-          <p className="text-sm text-gray-400 mt-3">
+          <p className="text-base text-gray-300 mt-6 font-medium">
             {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 
-              '✨ Unlimited enrichment • No credit card required' : 
-              `✨ ${FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS} rows free • No signup required`
+              '✨ No limits • No signup required' : 
+              `✨ Up to ${FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS} contacts free • No signup required`
             }
           </p>
-        </div>
-
-        {/* Social Proof Numbers */}
-        <div className="grid grid-cols-3 gap-8 mt-16 pt-12 border-t border-gray-800 opacity-0 animate-fade-up [animation-duration:600ms] [animation-delay:1000ms] [animation-fill-mode:forwards]">
-          <div className="text-center">
-            <div className="text-3xl lg:text-4xl font-bold text-white mb-2">50M+</div>
-            <div className="text-sm text-gray-400">Contacts Enriched</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl lg:text-4xl font-bold text-white mb-2">10K+</div>
-            <div className="text-sm text-gray-400">Happy Users</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl lg:text-4xl font-bold text-white mb-2">95%</div>
-            <div className="text-sm text-gray-400">Accuracy Rate</div>
-          </div>
         </div>
       </div>
 

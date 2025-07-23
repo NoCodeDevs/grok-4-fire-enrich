@@ -5,7 +5,7 @@ export function Footer() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="flex flex-col items-start">
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-2 mb-6 group">
@@ -39,59 +39,6 @@ export function Footer() {
                   <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.347-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
                 </svg>
               </a>
-            </div>
-          </div>
-
-          {/* Product Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-6 text-lg">Product</h3>
-            <ul className="space-y-4">
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Features</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Pricing</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">API Documentation</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Integrations</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Status Page</a></li>
-            </ul>
-          </div>
-
-          {/* Company Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-6 text-lg">Company</h3>
-            <ul className="space-y-4">
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">About Us</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Blog</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Careers</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Contact</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Press Kit</a></li>
-            </ul>
-          </div>
-
-          {/* Support Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-6 text-lg">Support</h3>
-            <ul className="space-y-4">
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Help Center</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Community</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Terms of Service</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors duration-200 hover:translate-x-1 transform inline-block">Cookie Policy</a></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="mt-16 pt-8 border-t border-gray-800/50">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="text-gray-400 text-sm">
-              © 2024 MakerThrive. All rights reserved.
-            </div>
-            <div className="flex items-center space-x-6 text-sm text-gray-400">
-              <span className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>All systems operational</span>
-              </span>
-              <span>•</span>
-              <span>Made with ❤️ for makers</span>
             </div>
           </div>
         </div>

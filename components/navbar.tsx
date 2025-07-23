@@ -44,30 +44,8 @@ export function Navbar({ onLogoClick }: NavbarProps) {
             </span>
           </div>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-300 hover:text-white transition-colors duration-200 font-medium">
-              Features
-            </a>
-            <a href="#pricing" className="text-gray-300 hover:text-white transition-colors duration-200 font-medium">
-              Pricing
-            </a>
-            <a href="#docs" className="text-gray-300 hover:text-white transition-colors duration-200 font-medium">
-              Docs
-            </a>
-            <a href="#support" className="text-gray-300 hover:text-white transition-colors duration-200 font-medium">
-              Support
-            </a>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              className="text-gray-300 hover:text-white hover:bg-gray-800/50 transition-all duration-200"
-            >
-              Sign In
-            </Button>
+          {/* CTA Button */}
+          <div className="flex items-center">
             <Button 
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
               onClick={() => {

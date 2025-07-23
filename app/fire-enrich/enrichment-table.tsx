@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Download, X, Copy, ExternalLink, Globe, Mail, Check, ChevronDown, ChevronUp, Activity, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { Download, X, Copy, ExternalLink, Globe, Mail, Check, ChevronDown, ChevronUp, Activity, CheckCircle, AlertCircle, Info, Star, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { LeadScore, PersonalizedEmail } from '@/lib/types/lead-scoring';
 
 interface EnrichmentTableProps {
   rows: CSVRow[];
@@ -40,6 +41,16 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
   }>>([]);
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const activityScrollRef = useRef<HTMLDivElement>(null);
+
+  // Lead scoring and email generation state
+  const [leadScores, setLeadScores] = useState<Map<number, LeadScore>>(new Map());
+  const [loadingScores, setLoadingScores] = useState<Set<number>>(new Set());
+  const [emailModal, setEmailModal] = useState<{
+    isOpen: boolean;
+    email: PersonalizedEmail | null;
+    loading: boolean;
+    rowIndex: number;
+  }>({ isOpen: false, email: null, loading: false, rowIndex: -1 });
 
   // Track when each row's data arrives
   const [rowDataArrivalTime, setRowDataArrivalTime] = useState<Map<number, number>>(new Map());
@@ -222,6 +233,96 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
       }
       setStatus('cancelled');
       setCurrentRow(-1);
+    }
+  };
+
+  // Lead scoring function
+  const calculateLeadScore = async (rowIndex: number) => {
+    const result = results.get(rowIndex);
+    if (!result || !emailColumn) return;
+
+    const email = result.originalData[emailColumn];
+    if (!email) return;
+
+    setLoadingScores(prev => new Set([...prev, rowIndex]));
+
+    try {
+      const response = await fetch('/api/lead-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enrichedData: result.enrichments,
+          email,
+          companyDomain: email.split('@')[1]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate lead score');
+      }
+
+      const data = await response.json();
+      setLeadScores(prev => new Map([...prev, [rowIndex, data.leadScore]]));
+      toast.success('Lead score calculated!');
+    } catch (error) {
+      console.error('Lead scoring error:', error);
+      toast.error('Failed to calculate lead score');
+    } finally {
+      setLoadingScores(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(rowIndex);
+        return newSet;
+      });
+    }
+  };
+
+  // Email generation function
+  const generatePersonalizedEmail = async (rowIndex: number) => {
+    const result = results.get(rowIndex);
+    const leadScore = leadScores.get(rowIndex);
+    
+    if (!result || !emailColumn) return;
+
+    const email = result.originalData[emailColumn];
+    if (!email) return;
+
+    // If no lead score, calculate it first
+    if (!leadScore) {
+      toast.error('Please calculate lead score first');
+      return;
+    }
+
+    setEmailModal(prev => ({ ...prev, loading: true, rowIndex }));
+
+    try {
+      const response = await fetch('/api/generate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enrichedData: result.enrichments,
+          leadScore,
+          email,
+          senderName: 'Your Name', // Could be made configurable
+          senderCompany: 'Your Company', // Could be made configurable
+          tone: 'professional'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate email');
+      }
+
+      const data = await response.json();
+      setEmailModal({
+        isOpen: true,
+        email: data.email,
+        loading: false,
+        rowIndex
+      });
+    } catch (error) {
+      console.error('Email generation error:', error);
+      toast.error('Failed to generate personalized email');
+      setEmailModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -661,13 +762,60 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-xs">
                         <button
                           onClick={() => openDetailSidebar(index)}
                           className="text-primary hover:text-primary/80 font-medium hover:underline"
                         >
                           View details →
                         </button>
+                        
+                        {/* Lead Scoring Button */}
+                        {result && result.status === 'completed' && (
+                          <div className="flex items-center gap-1">
+                            {leadScores.has(index) ? (
+                              <div className="flex items-center gap-1">
+                                <Badge 
+                                  className={`text-xs px-2 py-0.5 ${
+                                    leadScores.get(index)?.priority === 'Hot' 
+                                      ? 'bg-red-500/20 text-red-400 border-red-500/30' 
+                                      : leadScores.get(index)?.priority === 'Warm'
+                                      ? 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                                      : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                  }`}
+                                >
+                                  <Star className="w-3 h-3 mr-1" />
+                                  {leadScores.get(index)?.overallScore}/100
+                                </Badge>
+                                <button
+                                  onClick={() => generatePersonalizedEmail(index)}
+                                  disabled={emailModal.loading && emailModal.rowIndex === index}
+                                  className="text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
+                                  title="Generate personalized email"
+                                >
+                                  {emailModal.loading && emailModal.rowIndex === index ? (
+                                    <div className="w-3 h-3 border border-green-400 border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <Send className="w-3 h-3" />
+                                  )}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => calculateLeadScore(index)}
+                                disabled={loadingScores.has(index)}
+                                className="text-purple-400 hover:text-purple-300 transition-colors disabled:opacity-50"
+                                title="Calculate AI lead score"
+                              >
+                                {loadingScores.has(index) ? (
+                                  <div className="w-3 h-3 border border-purple-400 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Zap className="w-3 h-3" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -1115,6 +1263,88 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
           </Card>
         );
       })()}
+
+      {/* Email Generation Modal */}
+      <Sheet open={emailModal.isOpen} onOpenChange={(open) => !open && setEmailModal(prev => ({ ...prev, isOpen: false }))}>
+        <SheetContent className="w-[600px] sm:w-[700px] bg-card border-border">
+          <SheetHeader className="pb-4">
+            <SheetTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Send className="w-5 h-5 text-green-400" />
+              Personalized Email
+            </SheetTitle>
+          </SheetHeader>
+          
+          {emailModal.email && (
+            <div className="space-y-6">
+              {/* Email Subject */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Subject Line</Label>
+                <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                  <p className="text-sm text-foreground font-medium">{emailModal.email.subject}</p>
+                </div>
+              </div>
+
+              {/* Email Body */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Email Body</Label>
+                <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                  <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
+                    {emailModal.email.body}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Personalization Details */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Personalization Strategy</Label>
+                <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                  <p className="text-xs text-muted-foreground">{emailModal.email.reasoning}</p>
+                </div>
+              </div>
+
+              {/* Confidence Score */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-foreground">Confidence Score</Label>
+                  <Badge className="bg-primary/20 text-primary border-primary/30">
+                    {Math.round(emailModal.email.confidence * 100)}%
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-foreground">Tone</Label>
+                  <Badge className="bg-secondary/20 text-secondary-foreground border-secondary/30 capitalize">
+                    {emailModal.email.tone}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Subject: ${emailModal.email?.subject}\n\n${emailModal.email?.body}`);
+                    toast.success('Email copied to clipboard!');
+                  }}
+                  className="flex-1 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Email
+                </Button>
+                <Button
+                  onClick={() => {
+                    const mailtoLink = `mailto:${emailColumn ? rows[emailModal.rowIndex][emailColumn] : ''}?subject=${encodeURIComponent(emailModal.email?.subject || '')}&body=${encodeURIComponent(emailModal.email?.body || '')}`;
+                    window.open(mailtoLink);
+                  }}
+                  className="flex-1 bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-500/30"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Open in Email
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

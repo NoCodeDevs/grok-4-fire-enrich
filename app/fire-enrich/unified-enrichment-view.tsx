@@ -176,10 +176,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
     <div className="space-y-6">
       {/* Table Preview at the top */}
       <div className="w-full">
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <Table>
             <TableHeader>
-              <TableRow className="border-b-2 border-orange-100">
+              <TableRow className="border-b-2 border-primary/20">
                 {/* All columns - highlight email column */}
                 {columns.map((col, idx) => {
                   const isEmailCol = col === emailColumn;
@@ -189,8 +189,8 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                       className={cn(
                         "transition-all duration-700 relative",
                         isEmailCol
-                          ? "sticky left-0 z-10 bg-orange-500 text-white font-bold email-column-glow"
-                          : "bg-zinc-50 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+                          ? "sticky left-0 z-10 bg-primary text-primary-foreground font-bold email-column-glow"
+                          : "bg-muted/50 font-medium text-foreground",
                         !isEmailCol && step >= 2 && "opacity-30"
                       )}
                     >
@@ -203,7 +203,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                   <TableHead 
                     key={`new-${idx}`}
                     className={cn(
-                      "font-semibold transition-all duration-700 bg-orange-50 text-orange-900 dark:bg-orange-950/20 dark:text-orange-400",
+                                              "font-semibold transition-all duration-700 bg-primary/10 text-primary",
                       "animate-in fade-in slide-in-from-right-2"
                     )}
                     style={{
@@ -212,7 +212,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-orange-500">✨</span>
+                      <span className="text-primary">✨</span>
                       <span>{field.displayName}</span>
                     </div>
                   </TableHead>
@@ -239,14 +239,14 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         <TableCell 
                           key={colIdx}
                           className={cn(
-                            "sticky left-0 z-10 bg-orange-50 transition-all duration-700",
-                            "text-zinc-900 dark:bg-orange-950/20 dark:text-zinc-100",
+                            "sticky left-0 z-10 bg-primary/10 transition-all duration-700",
+                            "text-foreground",
                             rowIdx === displayRows.length - 1 && "email-column-rounded-bottom"
                           )}
                         >
                           <span className={cn(
                             "text-sm truncate block max-w-[200px] font-mono font-bold",
-                            isValidEmail ? "text-zinc-900 dark:text-zinc-100" : email ? "text-red-600" : "text-gray-400"
+                            isValidEmail ? "text-foreground" : email ? "text-destructive" : "text-muted-foreground"
                           )}>
                             {email || '-'}
                           </span>
@@ -258,11 +258,11 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                       <TableCell 
                         key={colIdx}
                         className={cn(
-                          "transition-all duration-700 bg-zinc-50/50 dark:bg-zinc-800/50",
+                          "transition-all duration-700 bg-muted/20",
                           step >= 2 && "opacity-30"
                         )}
                       >
-                        <span className="text-sm truncate block max-w-[150px] text-gray-600">
+                        <span className="text-sm truncate block max-w-[150px] text-muted-foreground">
                           {cellValue || '-'}
                         </span>
                       </TableCell>
@@ -281,11 +281,11 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         animationFillMode: 'backwards'
                       }}
                     >
-                      <div className="h-5 rounded-full bg-gradient-to-r from-zinc-200 to-zinc-300 animate-pulse dark:from-zinc-700 dark:to-zinc-600" />
+                      <div className="h-5 rounded-full bg-gradient-to-r from-muted to-muted/70 animate-pulse" />
                     </TableCell>
                   ))}
                   {step >= 2 && selectedFields.length > maxVisibleFields && (
-                    <TableCell className="text-center text-gray-400 animate-in fade-in duration-700">
+                    <TableCell className="text-center text-muted-foreground animate-in fade-in duration-700">
                       ...
                     </TableCell>
                   )}
@@ -297,7 +297,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {!showAllRows && rows.length > 3 && (
           <button
             onClick={() => setShowAllRows(true)}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 mt-2 font-medium"
+            className="text-sm text-primary hover:text-primary/80 mt-2 font-medium"
           >
             Show {rows.length - 3} more rows →
           </button>
@@ -305,7 +305,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {showAllRows && (
           <button
             onClick={() => setShowAllRows(false)}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 mt-2 font-medium"
+            className="text-sm text-primary hover:text-primary/80 mt-2 font-medium"
           >
             Show less
           </button>
@@ -317,15 +317,15 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {/* Step 1: Email column selection */}
         {step === 1 && (
           <div className="space-y-4">
-            <Card className="p-5 border-zinc-200 dark:border-zinc-800">
+            <Card className="p-5 bg-card border-border">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-lg font-bold text-[#36322F] dark:text-white">
+                  <h3 className="text-lg font-bold text-foreground">
                     {emailColumn ? 'Email Column Detected:' : 'Select Email Column:'}
                   </h3>
                   {emailColumn ? (
                     <>
-                      <span className="font-mono text-sm bg-orange-100 px-3 py-1 rounded-full border border-orange-300 text-orange-700 dark:bg-orange-900/20 dark:border-orange-700 dark:text-orange-400 font-medium">
+                      <span className="font-mono text-sm bg-primary/10 px-3 py-1 rounded-full border border-primary/20 text-primary font-medium">
                         {emailColumn}
                       </span>
                       {!showEmailDropdownStep1 && (
@@ -333,7 +333,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowEmailDropdownStep1(true)}
-                          className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 px-2 py-1 h-auto"
+                          className="text-primary hover:text-primary/80 px-2 py-1 h-auto"
                         >
                           Change
                         </Button>
@@ -343,10 +343,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           setEmailColumn(value);
                           setShowEmailDropdownStep1(false);
                         }}>
-                          <SelectTrigger className="w-48 bg-white border-orange-300 dark:bg-zinc-800 dark:border-orange-700">
+                          <SelectTrigger className="w-48 bg-card border-border">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white dark:bg-zinc-800">
+                          <SelectContent className="bg-card border-border">
                             {columns.map((col) => (
                               <SelectItem key={col} value={col}>
                                 {col}
@@ -358,10 +358,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                     </>
                   ) : (
                     <Select value={emailColumn} onValueChange={(value) => setEmailColumn(value)}>
-                      <SelectTrigger className="w-64 bg-white border-orange-300 dark:bg-zinc-800 dark:border-orange-700">
+                      <SelectTrigger className="w-64 bg-card border-border">
                         <SelectValue placeholder="Select email column" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-800">
+                      <SelectContent className="bg-card border-border">
                         {columns.map((col) => (
                           <SelectItem key={col} value={col}>
                             {col}
@@ -396,9 +396,9 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
               if (skippableEmails.length === 0) return null;
               
               return (
-                <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800">
-                  <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                  <AlertDescription className="text-sm text-orange-800 dark:text-orange-200">
+                <Alert className="border-amber-500/20 bg-amber-500/10">
+                  <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <AlertDescription className="text-sm text-amber-200">
                     <strong>{skippableEmails.length} emails</strong> from common providers (Gmail, Yahoo, etc.) will be automatically skipped to save API calls.
                     These are typically personal emails without company information.
                   </AlertDescription>
@@ -410,10 +410,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
 
         {/* Email column info for step 2+ */}
         {step >= 2 && (
-          <div className="mb-4 flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 dark:bg-orange-950/20 dark:border-orange-900/30">
+          <div className="mb-4 flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Email Column:</span>
-              <span className="font-mono text-sm bg-white px-3 py-1 rounded-full border border-orange-300 text-orange-700 dark:bg-zinc-800 dark:border-orange-700 dark:text-orange-400">
+              <span className="text-sm font-medium text-foreground">Email Column:</span>
+              <span className="font-mono text-sm bg-card px-3 py-1 rounded-full border border-primary/20 text-primary">
                 {emailColumn}
               </span>
             </div>
@@ -422,7 +422,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowEmailDropdown(true)}
-                className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                className="text-primary hover:text-primary/80"
               >
                 Change
               </Button>
@@ -432,10 +432,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                 setEmailColumn(value);
                 setShowEmailDropdown(false);
               }}>
-                <SelectTrigger className="w-48 bg-white border-orange-300 dark:bg-zinc-800 dark:border-orange-700">
+                <SelectTrigger className="w-48 bg-card border-border">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-zinc-800">
+                <SelectContent className="bg-card border-border">
                   {columns.map((col) => (
                     <SelectItem key={col} value={col}>
                       {col}
@@ -450,9 +450,9 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         {/* Step 2: Field Selection */}
         {step === 2 && (
           <div className="space-y-4">
-            <Card className="p-4 border-zinc-200 dark:border-zinc-800">
+                          <Card className="p-4 bg-card border-border">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-[#36322F] dark:text-white">
+                <h3 className="text-xl font-bold text-foreground">
                   Select fields to enrich ({selectedFields.length}/10)
                 </h3>
                 {/* Selected fields counter */}
@@ -477,8 +477,8 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                         className={cn(
                           "px-2 py-1 text-xs rounded-full transition-all duration-200 font-medium",
                           isSelected 
-                            ? "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100" 
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700",
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                                                          : "bg-muted text-muted-foreground hover:bg-muted/80",
                           selectedFields.length >= 10 && !isSelected && "opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -505,7 +505,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                       onClick={() => setShowNaturalLanguage(!showNaturalLanguage)}
                     >
                       <span className="flex items-center gap-2 font-medium">
-                        <Sparkles size={18} className="text-orange-500" />
+                        <Sparkles size={18} className="text-primary" />
                         Add with natural language
                       </span>
                       {showNaturalLanguage ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -518,7 +518,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           value={naturalLanguageInput}
                           onChange={(e) => setNaturalLanguageInput(e.target.value)}
                           rows={3}
-                          className="border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className="bg-card border-border focus:border-primary"
                         />
                         <Button 
                           onClick={handleGenerateFields}
@@ -540,7 +540,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                       onClick={() => setShowManualAdd(!showManualAdd)}
                     >
                       <span className="flex items-center gap-2 font-medium">
-                        <Plus size={18} className="text-orange-500" />
+                        <Plus size={18} className="text-primary" />
                         Add manually
                       </span>
                       {showManualAdd ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -552,14 +552,14 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                           placeholder="Field name"
                           value={customField.name}
                           onChange={(e) => setCustomField({ ...customField, name: e.target.value })}
-                          className="w-full border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className="w-full bg-card border-border focus:border-primary"
                         />
                         <Textarea
                           placeholder="Field description"
                           value={customField.description}
                           onChange={(e) => setCustomField({ ...customField, description: e.target.value })}
                           rows={2}
-                          className="w-full border-orange-200 focus:border-orange-400 dark:border-orange-900/30 dark:focus:border-orange-700"
+                          className="w-full bg-card border-border focus:border-primary"
                         />
                         <Select 
                           value={customField.type} 
@@ -567,10 +567,10 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
                             setCustomField({ ...customField, type: value })
                           }
                         >
-                          <SelectTrigger className="w-full border-orange-200 focus:border-orange-400">
+                          <SelectTrigger className="w-full bg-card border-border focus:border-primary">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-card border-border">
                             <SelectItem value="string">Text</SelectItem>
                             <SelectItem value="number">Number</SelectItem>
                             <SelectItem value="boolean">Boolean</SelectItem>

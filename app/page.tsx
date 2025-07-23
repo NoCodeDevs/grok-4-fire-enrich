@@ -53,17 +53,17 @@ export default function HomePage() {
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">
       <div className="flex justify-between items-center">
-        <div className="text-xl font-bold text-[#36322F] dark:text-white">
+        <div className="text-xl font-bold text-white">
           MakerThrive
         </div>
 
       </div>
 
       <div className="text-center pt-8 pb-6">
-        <h1 className="text-[2.5rem] lg:text-[3.8rem] text-[#36322F] dark:text-white font-semibold tracking-tight leading-[0.9] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
-          <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-red-600 to-yellow-500 inline-flex justify-center items-center">
-            Grok 4 Fire Enrich
-          </span>
+        <h1 className="text-[2.5rem] lg:text-[3.8rem] text-white font-semibold tracking-tight leading-[0.9] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
+                      <span className="relative px-1 text-transparent bg-clip-text bg-gradient-to-tr from-purple-400 to-pink-400 inline-flex justify-center items-center">
+              Grok 4 Fire Enrich
+            </span>
           <span className="block leading-[1.1] opacity-0 animate-fade-up [animation-duration:500ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
             Enrich your contacts.
           </span>
@@ -83,7 +83,7 @@ export default function HomePage() {
           <p className="text-sm text-muted-foreground">Initializing...</p>
         </div>
       ) : (
-        <div className="bg-[#FBFAF9] p-4 sm:p-6 rounded-lg shadow-sm">
+        <div className="bg-card p-4 sm:p-6 rounded-lg shadow-lg border border-border">
         {step === 'setup' && (
           <Button
             variant="code"

@@ -34,19 +34,18 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let apiKey = process.env.FIRECRAWL_API_KEY;
+  const apiKey = process.env.FIRECRAWL_API_KEY;
   
   if (!apiKey) {
-    const headerApiKey = request.headers.get('X-Firecrawl-API-Key');
-    
-    if (!headerApiKey) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'API configuration error. Please try again later or contact support.' 
-      }, { status: 500 });
-    }
-    
-    apiKey = headerApiKey;
+    console.error('Missing Firecrawl API key in environment variables');
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Server configuration error: Missing required API keys. Please contact the administrator.',
+      code: 'MISSING_API_KEYS',
+      details: {
+        missingFirecrawl: true
+      }
+    }, { status: 500 });
   }
 
   try {

@@ -16,8 +16,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
+      console.error('Missing OpenAI API key in environment variables');
       return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
+        { 
+          error: 'Server configuration error: Missing required API keys. Please contact the administrator.',
+          code: 'MISSING_API_KEYS',
+          details: {
+            missingOpenAI: true
+          }
+        },
         { status: 500 }
       );
     }
@@ -76,7 +83,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Field generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate fields' },
+      { 
+        error: 'Failed to generate fields',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

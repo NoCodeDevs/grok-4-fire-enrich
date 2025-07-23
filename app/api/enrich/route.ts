@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
     const abortController = new AbortController();
     activeSessions.set(sessionId, abortController);
 
-    // Check environment variables and headers for API keys
-    const openaiApiKey = process.env.OPENAI_API_KEY || request.headers.get('X-OpenAI-API-Key');
-    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY || request.headers.get('X-Firecrawl-API-Key');
+    // Check environment variables for API keys
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY;
     
     if (!openaiApiKey || !firecrawlApiKey) {
       console.error('Missing API keys:', { 
@@ -59,7 +59,14 @@ export async function POST(request: NextRequest) {
         hasFirecrawl: !!firecrawlApiKey 
       });
       return NextResponse.json(
-        { error: 'Server configuration error: Missing API keys' },
+        { 
+          error: 'Server configuration error: Missing required API keys. Please contact the administrator.',
+          code: 'MISSING_API_KEYS',
+          details: {
+            missingOpenAI: !openaiApiKey,
+            missingFirecrawl: !firecrawlApiKey
+          }
+        },
         { status: 500 }
       );
     }

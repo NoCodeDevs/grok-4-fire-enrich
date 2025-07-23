@@ -107,7 +107,19 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
         body: JSON.stringify({ prompt: naturalLanguageInput })
       });
       
-      if (!response.ok) throw new Error('Failed to generate fields');
+      if (!response.ok) {
+        if (response.status === 500) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.code === 'MISSING_API_KEYS') {
+            toast.error('Service temporarily unavailable. Please try again later.');
+          } else {
+            toast.error('Service temporarily unavailable. Please try again later.');
+          }
+        } else {
+          toast.error('Failed to generate fields. Please try again.');
+        }
+        return;
+      }
       
       const result = await response.json();
       
@@ -129,7 +141,7 @@ export function UnifiedEnrichmentView({ rows, columns, onStartEnrichment }: Unif
       setNaturalLanguageInput('');
     } catch (error) {
       console.error('Error generating fields:', error);
-      toast.error('Failed to generate fields. Please try again.');
+      toast.error('Service temporarily unavailable. Please try again later.');
     } finally {
       setIsGenerating(false);
     }

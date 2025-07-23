@@ -142,13 +142,9 @@ pnpm dev
 
 5. Open [http://localhost:3000/fire-enrich](http://localhost:3000/fire-enrich)
 
-### Alternative: Browser-based API Keys
+### API Key Configuration
 
-If you prefer not to use environment variables, Grok 4 Fire Enrich supports entering API keys directly in the browser:
-
-1. Visit the Grok 4 Fire Enrich page
-2. Click "Enter API Keys" when prompted
-3. Keys are stored securely in localStorage
+Grok 4 Fire Enrich requires API keys to be configured as environment variables:
 
 ## Features
 
@@ -259,11 +255,11 @@ If you prefer not to use environment variables, Grok 4 Fire Enrich supports ente
 
 ### Common Issues
 
-1. **"No API Keys Found"**
+1. **"Server Configuration Error"**
 
-   - Check environment variables
-   - Try browser-based key entry
+   - Check environment variables are properly set
    - Verify key validity
+   - Contact administrator if the issue persists
 
 2. **Slow Enrichment**
 
@@ -284,7 +280,7 @@ If you prefer not to use environment variables, Grok 4 Fire Enrich supports ente
 
 ## Privacy & Security
 
-- **Local Storage**: API keys stored client-side only
+- **Server-side Configuration**: API keys stored as environment variables only
 - **No Data Retention**: Processed data not stored server-side
 - **Secure Transmission**: HTTPS for all requests
 - **Source Transparency**: All data sources tracked

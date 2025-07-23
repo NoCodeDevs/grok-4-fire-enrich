@@ -81,22 +81,10 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     setAgentMessages([]); // Clear previous messages
     
     try {
-      // Get API keys from localStorage if not in environment
-      const firecrawlApiKey = localStorage.getItem('firecrawl_api_key');
-      const openaiApiKey = localStorage.getItem('openai_api_key');
-      
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(useAgents && { 'x-use-agents': 'true' }),
       };
-      
-      // Add API keys to headers if available
-      if (firecrawlApiKey) {
-        headers['X-Firecrawl-API-Key'] = firecrawlApiKey;
-      }
-      if (openaiApiKey) {
-        headers['X-OpenAI-API-Key'] = openaiApiKey;
-      }
       
       const response = await fetch('/api/enrich', {
         method: 'POST',
@@ -111,6 +99,14 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
       });
 
       if (!response.ok) {
+        if (response.status === 500) {
+          const errorData = await response.json().catch(() => ({}));
+          if (errorData.code === 'MISSING_API_KEYS') {
+            toast.error('Service temporarily unavailable. Please try again later.');
+            setStatus('completed');
+            return;
+          }
+        }
         throw new Error('Failed to start enrichment');
       }
 
@@ -204,6 +200,7 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
       }
     } catch (error) {
       console.error('Failed to start enrichment:', error);
+      toast.error('Service temporarily unavailable. Please try again later.');
       setStatus('completed');
     }
   }, [fields, rows, emailColumn, useAgents]);

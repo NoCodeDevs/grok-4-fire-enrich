@@ -820,7 +820,7 @@ export function EnrichmentTable({ rows, fields, emailColumn, onReset }: Enrichme
                       } ${
                         isProcessing ? 'bg-blue-900/10' : 
                         isSelected ? 'bg-blue-950/10' :
-                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/20'
+                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/50'
                       }`}
                       onClick={() => toggleRowSelection(originalIndex)}
                     >
@@ -828,7 +828,7 @@ export function EnrichmentTable({ rows, fields, emailColumn, onReset }: Enrichme
                       <td className={`px-3 py-2 sticky left-0 z-10 border-r border-gray-700/30 transition-colors ${
                         isProcessing ? 'bg-blue-900/10' : 
                         isSelected ? 'bg-blue-950/10' :
-                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/20'
+                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/50'
                       }`}>
                         <div className="flex items-center gap-2">
                           {/* Row Selection Checkbox */}

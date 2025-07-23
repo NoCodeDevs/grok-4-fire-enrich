@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Download, X, Copy, ExternalLink, Globe, Mail, Check, ChevronDown, ChevronUp, Activity, CheckCircle, AlertCircle, Info, Star, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { LeadScore, PersonalizedEmail } from '@/lib/types/lead-scoring';
+import { PersonalizedEmail } from '@/lib/types/lead-scoring';
 
 interface EnrichmentTableProps {
   rows: CSVRow[];
@@ -42,9 +42,7 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const activityScrollRef = useRef<HTMLDivElement>(null);
 
-  // Lead scoring and email generation state
-  const [leadScores, setLeadScores] = useState<Map<number, LeadScore>>(new Map());
-  const [loadingScores, setLoadingScores] = useState<Set<number>>(new Set());
+  // Email generation state
   const [emailModal, setEmailModal] = useState<{
     isOpen: boolean;
     email: PersonalizedEmail | null;
@@ -222,16 +220,6 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     }
   }, [startEnrichment, status]); // Add proper dependencies
 
-  // When enrichment results arrive, trigger lead scoring automatically
-  useEffect(() => {
-    results.forEach((result, rowIndex) => {
-      if (result.status === 'completed' && !leadScores.has(rowIndex) && !loadingScores.has(rowIndex)) {
-        calculateLeadScore(rowIndex);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [results]);
-
   const cancelEnrichment = async () => {
     if (sessionId) {
       try {
@@ -246,61 +234,14 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     }
   };
 
-  // Lead scoring function
-  const calculateLeadScore = async (rowIndex: number) => {
-    const result = results.get(rowIndex);
-    if (!result || !emailColumn) return;
-
-    const email = result.originalData[emailColumn];
-    if (!email) return;
-
-    setLoadingScores(prev => new Set([...prev, rowIndex]));
-
-    try {
-      const response = await fetch('/api/lead-score', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enrichedData: result.enrichments,
-          email,
-          companyDomain: email.split('@')[1]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to calculate lead score');
-      }
-
-      const data = await response.json();
-      setLeadScores(prev => new Map([...prev, [rowIndex, data.leadScore]]));
-      toast.success('Lead score calculated!');
-    } catch (error) {
-      console.error('Lead scoring error:', error);
-      toast.error('Failed to calculate lead score');
-    } finally {
-      setLoadingScores(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(rowIndex);
-        return newSet;
-      });
-    }
-  };
-
   // Email generation function
   const generatePersonalizedEmail = async (rowIndex: number) => {
     const result = results.get(rowIndex);
-    const leadScore = leadScores.get(rowIndex);
     
     if (!result || !emailColumn) return;
 
     const email = result.originalData[emailColumn];
     if (!email) return;
-
-    // If no lead score, calculate it first
-    if (!leadScore) {
-      toast.error('Please calculate lead score first');
-      return;
-    }
 
     setEmailModal(prev => ({ ...prev, loading: true, rowIndex }));
 
@@ -310,7 +251,6 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           enrichedData: result.enrichments,
-          leadScore,
           email,
           senderName: 'Your Name', // Could be made configurable
           senderCompany: 'Your Company', // Could be made configurable

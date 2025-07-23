@@ -15,6 +15,8 @@ interface CSVUploaderProps {
 export function CSVUploader({ onUpload }: CSVUploaderProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'upload' | 'paste'>('upload');
+  const [pastedEmails, setPastedEmails] = useState('');
 
   const processCSV = useCallback((file: File) => {
     setIsProcessing(true);
@@ -92,85 +94,147 @@ export function CSVUploader({ onUpload }: CSVUploaderProps) {
     maxFiles: 1,
   });
 
+  function parseEmails(input: string): { email: string }[] {
+    return input
+      .split(/[\s,]+/)
+      .map(e => e.trim())
+      .filter(e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+      .map(email => ({ email }));
+  }
+
+  function handlePasteSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setIsProcessing(true);
+    const emails = parseEmails(pastedEmails);
+    if (emails.length === 0) {
+      setError('No valid email addresses found.');
+      setIsProcessing(false);
+      return;
+    }
+    setIsProcessing(false);
+    onUpload(emails, ['email']);
+  }
+
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-semibold mb-1">Upload Your CSV File</h2>
-        <p className="text-sm text-muted-foreground">
-          Start by uploading a CSV file containing email addresses
-        </p>
+      <div className="flex justify-center mb-6 gap-2">
+        <Button
+          variant={mode === 'upload' ? 'orange' : 'ghost'}
+          onClick={() => setMode('upload')}
+          className="rounded-b-none"
+        >
+          Upload CSV
+        </Button>
+        <Button
+          variant={mode === 'paste' ? 'orange' : 'ghost'}
+          onClick={() => setMode('paste')}
+          className="rounded-b-none"
+        >
+          Paste Emails
+        </Button>
       </div>
 
-      <div
-        {...getRootProps()}
-        className={`
-          relative overflow-hidden
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-          transition-all duration-300 ease-out
-          ${isDragActive 
-            ? 'border-primary bg-primary/10 scale-[1.02] shadow-xl' 
-            : 'border-border hover:border-primary bg-card hover:bg-primary/5 hover:shadow-lg hover:scale-[1.01]'
-          }
-          ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-      >
-        <input {...getInputProps()} disabled={isProcessing} />
-        
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-5 dark:opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, #f97316 1px, transparent 1px)',
-            backgroundSize: '32px 32px'
-          }} />
-        </div>
-        
-        <div className="relative">
-          <div className={`
-            w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center
-            transition-all duration-300
-            ${isDragActive ? 'bg-primary scale-110 rotate-3' : 'bg-primary'}
-          `}>
-            <FileSpreadsheet className="w-8 h-8 text-white" />
+      {mode === 'upload' && (
+        <div>
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold mb-1">Upload Your CSV File</h2>
+            <p className="text-sm text-muted-foreground">
+              Start by uploading a CSV file containing email addresses
+            </p>
           </div>
-          
-          {isDragActive ? (
-            <div className="animate-fade-in">
-              <p className="text-xl font-semibold text-primary mb-1">Drop it here!</p>
-              <p className="text-sm text-muted-foreground">We&apos;ll start processing immediately</p>
-            </div>
-          ) : (
-            <>
-              <p className="text-lg font-medium text-foreground mb-1">
-                Drag & drop your CSV file here
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                or click to browse from your computer
-              </p>
-              <Button 
-                variant="orange"
-                size="sm"
-                disabled={isProcessing}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Select CSV File
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
 
+          <div
+            {...getRootProps()}
+            className={`
+              relative overflow-hidden
+              border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+              transition-all duration-300 ease-out
+              ${isDragActive 
+                ? 'border-primary bg-primary/10 scale-[1.02] shadow-xl' 
+                : 'border-border hover:border-primary bg-card hover:bg-primary/5 hover:shadow-lg hover:scale-[1.01]'
+              }
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+          >
+            <input {...getInputProps()} disabled={isProcessing} />
+            
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-5 dark:opacity-10">
+              <div className="absolute inset-0" style={{
+                backgroundImage: 'radial-gradient(circle at 2px 2px, #f97316 1px, transparent 1px)',
+                backgroundSize: '32px 32px'
+              }} />
+            </div>
+            
+            <div className="relative">
+              <div className={`
+                w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center
+                transition-all duration-300
+                ${isDragActive ? 'bg-primary scale-110 rotate-3' : 'bg-primary'}
+              `}>
+                <FileSpreadsheet className="w-8 h-8 text-white" />
+              </div>
+              
+              {isDragActive ? (
+                <div className="animate-fade-in">
+                  <p className="text-xl font-semibold text-primary mb-1">Drop it here!</p>
+                  <p className="text-sm text-muted-foreground">We&apos;ll start processing immediately</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-lg font-medium text-foreground mb-1">
+                    Drag & drop your CSV file here
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    or click to browse from your computer
+                  </p>
+                  <Button 
+                    variant="orange"
+                    size="sm"
+                    disabled={isProcessing}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Select CSV File
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {mode === 'paste' && (
+        <form onSubmit={handlePasteSubmit} className="bg-card border border-border rounded-lg p-8 text-center animate-fade-in">
+          <h2 className="text-xl font-semibold mb-1">Paste Email Addresses</h2>
+          <p className="text-sm text-muted-foreground mb-4">Paste a list of emails separated by commas, spaces, or new lines.</p>
+          <textarea
+            className="w-full min-h-[120px] max-h-60 p-3 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+            placeholder="e.g. john@stripe.com, sarah@notion.so\nmike@shopify.com"
+            value={pastedEmails}
+            onChange={e => setPastedEmails(e.target.value)}
+            disabled={isProcessing}
+          />
+          <Button
+            type="submit"
+            variant="orange"
+            disabled={isProcessing}
+            className="w-full mt-2"
+          >
+            Start Enrichment
+          </Button>
+        </form>
+      )}
       {error && (
         <div className="mt-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl animate-fade-in">
           <p className="font-semibold mb-1">Error:</p>
           <p className="text-sm whitespace-pre-line">{error}</p>
         </div>
       )}
-
       {isProcessing && (
         <div className="mt-6 text-center animate-fade-in">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full">
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            <p className="text-sm font-medium text-primary">Processing CSV file...</p>
+            <p className="text-sm font-medium text-primary">Processing...</p>
           </div>
         </div>
       )}

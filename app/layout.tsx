@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -9,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Fire Enrich",
-  description: "Enrich your data with AI-powered insights",
+  title: "MakerThrive - Transform Contact Data Into Intelligence",
+  description: "AI-powered contact enrichment. Get phone numbers, social profiles, and company data in seconds.",
 };
 
 export default function RootLayout({
@@ -21,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans`}>
-        {children}
+        <Navbar />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
         <Toaster />
       </body>
     </html>

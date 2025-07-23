@@ -51,13 +51,7 @@ export default function HomePage() {
   // API key related functions removed
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">
-      <div className="flex justify-between items-center">
-        <div className="text-xl font-bold text-white">
-          MakerThrive
-        </div>
-
-      </div>
+    <div className="pt-16 px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">{/* pt-16 for fixed navbar */}
 
       <div className="relative text-center pt-16 pb-20 max-w-6xl mx-auto">
         {/* Animated Data Enrichment Background */}

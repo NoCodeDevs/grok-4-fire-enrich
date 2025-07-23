@@ -10,6 +10,8 @@ import { UnifiedEnrichmentView } from "./fire-enrich/unified-enrichment-view";
 import { EnrichmentTable } from "./fire-enrich/enrichment-table";
 import { CSVRow, EnrichmentField } from "@/lib/types";
 import { FIRE_ENRICH_CONFIG } from "./fire-enrich/config";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 
 export default function HomePage() {
   const [step, setStep] = useState<'upload' | 'setup' | 'enrichment'>('upload');
@@ -50,8 +52,15 @@ export default function HomePage() {
 
   // API key related functions removed
 
+  const handleLogoClick = () => {
+    resetProcess();
+  };
+
   return (
-    <div className="pt-16 px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">{/* pt-16 for fixed navbar */}
+    <>
+      <Navbar onLogoClick={handleLogoClick} />
+      <main className="flex-1">
+        <div className="pt-16 px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">{/* pt-16 for fixed navbar */}
 
       {/* Hero Section - Only show when on upload step */}
       {step === 'upload' && (
@@ -286,7 +295,10 @@ export default function HomePage() {
       )}
       </div>
 
-      {/* API Key Modal removed */}
-    </div>
+        {/* API Key Modal removed */}
+        </div>
+      </main>
+      <Footer />
+    </>
   );
 }

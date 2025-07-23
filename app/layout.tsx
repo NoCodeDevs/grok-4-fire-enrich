@@ -23,11 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans`}>
-        <Navbar />
-        <main className="min-h-screen">
+        <div className="min-h-screen flex flex-col">
           {children}
-        </main>
-        <Footer />
+        </div>
         <Toaster />
       </body>
     </html>

@@ -53,7 +53,9 @@ export default function HomePage() {
   return (
     <div className="pt-16 px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto font-inter">{/* pt-16 for fixed navbar */}
 
-      <div className="relative text-center pt-16 pb-20 max-w-6xl mx-auto">
+      {/* Hero Section - Only show when on upload step */}
+      {step === 'upload' && (
+        <div className="relative text-center pt-16 pb-20 max-w-6xl mx-auto animate-fade-up">
         {/* Animated Data Enrichment Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
           {/* Data rows being enriched */}
@@ -207,16 +209,32 @@ export default function HomePage() {
             }
           </p>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Main Content */}
-      {isCheckingEnv ? (
-        <div className="text-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Initializing...</p>
-        </div>
-      ) : (
-        <div className="bg-card p-4 sm:p-6 rounded-lg shadow-lg border border-border">
+      <div className={`transition-all duration-500 ${step !== 'upload' ? 'animate-fade-up' : ''}`}>
+        {step !== 'upload' && (
+          <div className="text-center mb-8">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4">
+              {step === 'setup' ? 'Configure Your Enrichment' : 'Enrichment Results'}
+            </h1>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              {step === 'setup' 
+                ? 'Select your email column and choose the data fields you want to enrich.'
+                : 'Your contacts have been successfully enriched with AI-powered data.'
+              }
+            </p>
+          </div>
+        )}
+        
+        {isCheckingEnv ? (
+          <div className="text-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">Initializing...</p>
+          </div>
+        ) : (
+          <div className="bg-card p-4 sm:p-6 rounded-lg shadow-lg border border-border">
         {step === 'setup' && (
           <Button
             variant="code"
@@ -266,8 +284,7 @@ export default function HomePage() {
         )}
         </div>
       )}
-
-
+      </div>
 
       {/* API Key Modal removed */}
     </div>

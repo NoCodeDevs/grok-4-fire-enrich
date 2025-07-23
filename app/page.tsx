@@ -148,7 +148,7 @@ export default function HomePage() {
 
         {/* Subheadline */}
         <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:400ms] [animation-fill-mode:forwards]">
-          Upload your CSV and watch as AI enriches every contact with <span className="text-white font-semibold">phone numbers</span>, <span className="text-white font-semibold">social profiles</span>, and <span className="text-white font-semibold">company intelligence</span> in seconds.
+          Upload your CSV and watch as AI enriches every contact with <span className="text-white font-semibold">phone numbers</span>, <span className="text-white font-semibold">executive data</span>, and <span className="text-white font-semibold">company intelligence</span> in seconds.
         </p>
 
         {/* Beautiful feature cards */}

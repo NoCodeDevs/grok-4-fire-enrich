@@ -59,12 +59,77 @@ export default function HomePage() {
 
       </div>
 
-      <div className="text-center pt-16 pb-20 max-w-6xl mx-auto">
-        {/* Beautiful floating elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-1/4 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute top-40 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl animate-pulse [animation-delay:1s]"></div>
-          <div className="absolute bottom-20 left-1/3 w-28 h-28 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse [animation-delay:2s]"></div>
+      <div className="relative text-center pt-16 pb-20 max-w-6xl mx-auto">
+        {/* Animated Data Enrichment Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+          {/* Data rows being enriched */}
+          <div className="absolute top-16 left-8 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:1s]">
+            <div className="text-xs text-gray-400 mb-1">Contact #1</div>
+            <div className="text-sm text-white">john@company.com</div>
+            <div className="text-xs text-green-400 mt-1 animate-pulse">✓ Phone: +1 (555) 123-4567</div>
+          </div>
+          
+          <div className="absolute top-32 right-12 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:2s]">
+            <div className="text-xs text-gray-400 mb-1">Contact #2</div>
+            <div className="text-sm text-white">sarah@startup.io</div>
+            <div className="text-xs text-blue-400 mt-1 animate-pulse">✓ LinkedIn: /in/sarah-johnson</div>
+          </div>
+          
+          <div className="absolute top-48 left-16 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:3s]">
+            <div className="text-xs text-gray-400 mb-1">Contact #3</div>
+            <div className="text-sm text-white">mike@techcorp.com</div>
+            <div className="text-xs text-purple-400 mt-1 animate-pulse">✓ Company: TechCorp Inc.</div>
+          </div>
+          
+          <div className="absolute bottom-32 right-8 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:4s]">
+            <div className="text-xs text-gray-400 mb-1">Contact #4</div>
+            <div className="text-sm text-white">alex@design.co</div>
+            <div className="text-xs text-pink-400 mt-1 animate-pulse">✓ Twitter: @alexdesigner</div>
+          </div>
+          
+          <div className="absolute bottom-16 left-24 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:5s]">
+            <div className="text-xs text-gray-400 mb-1">Contact #5</div>
+            <div className="text-sm text-white">emma@marketing.com</div>
+            <div className="text-xs text-cyan-400 mt-1 animate-pulse">✓ Title: Marketing Director</div>
+          </div>
+          
+          {/* API call indicators */}
+          <div className="absolute top-24 left-1/2 transform -translate-x-1/2">
+            <div className="flex items-center gap-2 bg-gray-900/90 backdrop-blur-sm rounded-full px-4 py-2 border border-purple-500/30 animate-pulse">
+              <div className="w-2 h-2 bg-purple-400 rounded-full animate-ping"></div>
+              <span className="text-xs text-purple-300 font-mono">API Enriching...</span>
+            </div>
+          </div>
+          
+          {/* Data flow lines */}
+          <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="flow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="transparent" />
+                <stop offset="50%" stopColor="rgb(168, 85, 247)" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M100,150 Q300,100 500,200 T900,150"
+              stroke="url(#flow-gradient)"
+              strokeWidth="2"
+              fill="none"
+              className="animate-draw-line"
+            />
+            <path
+              d="M150,300 Q400,250 650,350 T950,300"
+              stroke="url(#flow-gradient)"
+              strokeWidth="2"
+              fill="none"
+              className="animate-draw-line [animation-delay:2s]"
+            />
+          </svg>
+          
+          {/* Floating data particles */}
+          <div className="absolute top-20 left-1/4 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute top-40 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl animate-float [animation-delay:1s]"></div>
+          <div className="absolute bottom-20 left-1/3 w-28 h-28 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-3xl animate-float [animation-delay:2s]"></div>
         </div>
 
         {/* Main Headline */}

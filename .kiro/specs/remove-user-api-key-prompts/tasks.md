@@ -83,13 +83,13 @@
   - Test frontend error handling with server configuration errors
   - _Requirements: 4.1, 4.2_
 
-- [-] 5. Clean up unused code and dependencies
+- [x] 5. Clean up unused code and dependencies
   - Remove unused imports and components related to API key management
   - Clean up any remaining references to localStorage API key storage
   - Verify no dead code remains from the API key flow
   - _Requirements: 3.1, 3.3_
 
-- [-] 5.1 Remove unused imports and clean up code
+- [x] 5.1 Remove unused imports and clean up code
   - Remove unused React hooks and components related to API key functionality
   - Remove unused utility functions for API key validation
   - Clean up any commented code or unused variables

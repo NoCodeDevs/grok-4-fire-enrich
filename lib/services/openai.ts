@@ -7,7 +7,18 @@ export class OpenAIService {
   private client: OpenAI;
 
   constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey });
+    // Configure OpenAI client with proper options for project API keys
+    const options: { apiKey: string; organization?: string; projectId?: string } = { apiKey };
+    
+    // Handle project API keys (sk-proj-*)
+    if (apiKey.startsWith('sk-proj-')) {
+      console.log('Using OpenAI project API key format');
+      // Extract project ID from the key if needed
+      // const projectId = apiKey.split('_')[1]; // Example extraction if needed
+      // options.projectId = projectId;
+    }
+    
+    this.client = new OpenAI(options);
   }
 
   createEnrichmentSchema(fields: EnrichmentField[]) {

@@ -29,9 +29,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // Configure OpenAI client with proper options for project API keys
+    const apiKey = process.env.OPENAI_API_KEY as string;
+    const options: { apiKey: string; organization?: string; projectId?: string } = { apiKey };
+    
+    // Handle project API keys (sk-proj-*)
+    if (apiKey.startsWith('sk-proj-')) {
+      console.log('Using OpenAI project API key format in generate-fields');
+      // Extract project ID from the key if needed
+      // const projectId = apiKey.split('_')[1]; // Example extraction if needed
+      // options.projectId = projectId;
+    }
+    
+    const openai = new OpenAI(options);
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',

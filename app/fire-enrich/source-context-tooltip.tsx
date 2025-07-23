@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ExternalLink, ChevronDown } from 'lucide-react';
 
 interface SourceContextTooltipProps {
@@ -26,6 +27,7 @@ interface SourceContextTooltipProps {
 
 export function SourceContextTooltip({ sources, legacySource, sourceCount, corroboration, confidence }: SourceContextTooltipProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   
@@ -49,6 +51,17 @@ export function SourceContextTooltip({ sources, legacySource, sourceCount, corro
       legacySource
     });
   }
+  
+  useEffect(() => {
+    if (isExpanded && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPanelPos({
+        top: rect.bottom + window.scrollY + 6, // 6px gap
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isExpanded]);
   
   const getDomain = (url: string) => {
     try {
@@ -100,31 +113,20 @@ export function SourceContextTooltip({ sources, legacySource, sourceCount, corro
           className={`w-3 h-3 ml-0.5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
         />
       </button>
-      
-      {isExpanded && (
+      {isExpanded && panelPos && createPortal(
         <div 
           ref={modalRef}
-          className="absolute z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2 max-w-md left-0 mt-2" 
+          className="z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg p-3 space-y-2 max-w-md fixed"
           style={{ 
             minWidth: '300px',
-            // Position above if near bottom of viewport
-            bottom: typeof window !== 'undefined' && 
-                   buttonRef.current && 
-                   buttonRef.current.getBoundingClientRect().bottom > window.innerHeight - 300 
-                   ? '100%' 
-                   : 'auto',
-            top: typeof window !== 'undefined' && 
-                 buttonRef.current && 
-                 buttonRef.current.getBoundingClientRect().bottom > window.innerHeight - 300 
-                 ? 'auto' 
-                 : '100%',
-            marginBottom: typeof window !== 'undefined' && 
-                         buttonRef.current && 
-                         buttonRef.current.getBoundingClientRect().bottom > window.innerHeight - 300 
-                         ? '8px' 
-                         : '0'
-          }}>
-          
+            top: panelPos.top,
+            left: panelPos.left,
+            width: panelPos.width > 320 ? panelPos.width : 320,
+            maxWidth: '95vw',
+            maxHeight: '70vh',
+            overflowY: 'auto',
+          }}
+        >
           <div className="mb-2 pb-2 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold text-gray-700">
@@ -148,7 +150,6 @@ export function SourceContextTooltip({ sources, legacySource, sourceCount, corro
               </p>
             )}
           </div>
-          
           <div className="max-h-64 overflow-y-auto space-y-3">
             {displaySources.map((source, idx) => (
               <div key={idx} className="border border-gray-100 rounded-lg p-3 hover:border-gray-200 transition-colors">
@@ -183,7 +184,8 @@ export function SourceContextTooltip({ sources, legacySource, sourceCount, corro
               </div>
             ))}
           </div>
-        </div>
+        </div>,
+        typeof window !== 'undefined' ? document.body : undefined
       )}
     </div>
   );

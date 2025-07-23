@@ -50,6 +50,11 @@ export class AgentOrchestrator {
       console.log(`[Orchestrator] Email context: domain=${emailContext.domain}, company=${emailContext.companyNameGuess || 'unknown'}`);
       
       // Step 2: Categorize fields
+      console.log(`[Orchestrator] Input fields for categorization:`);
+      fields.forEach((field, i) => {
+        console.log(`[Orchestrator] Field ${i + 1}: name="${field.name}", displayName="${field.displayName}", description="${field.description}"`);
+      });
+      
       const fieldCategories = this.categorizeFields(fields);
       console.log(`[Orchestrator] Field categories: discovery=${fieldCategories.discovery.length}, profile=${fieldCategories.profile.length}, metrics=${fieldCategories.metrics.length}, funding=${fieldCategories.funding.length}, techStack=${fieldCategories.techStack.length}, other=${fieldCategories.other.length}`);
       
@@ -77,6 +82,7 @@ export class AgentOrchestrator {
       const context: OrchestrationContext = { email, emailContext, discoveredData: {} };
       
       // Discovery phase (company identity)
+      console.log(`[Orchestrator] Checking discovery phase: ${fieldCategories.discovery.length} fields in discovery category`);
       if (fieldCategories.discovery.length > 0) {
         console.log(`[Orchestrator] Activating DISCOVERY-AGENT for fields: ${fieldCategories.discovery.map(f => f.name).join(', ')}`);
         if (onAgentProgress) {
@@ -112,6 +118,11 @@ export class AgentOrchestrator {
           if (value && onProgress) {
             onProgress(field, value);
           }
+        }
+      } else {
+        console.log(`[Orchestrator] SKIPPING DISCOVERY PHASE - No fields assigned to discovery category`);
+        if (onAgentProgress) {
+          onAgentProgress(`Skipping discovery phase - no relevant fields`, 'warning');
         }
       }
       
@@ -207,7 +218,6 @@ export class AgentOrchestrator {
           onAgentProgress(`Tech Stack complete: Found ${Object.keys(techStackResults).length} fields`, 'success');
         }
         Object.assign(enrichments, techStackResults);
-        
         for (const [field, value] of Object.entries(techStackResults)) {
           if (value && onProgress) {
             onProgress(field, value);
@@ -232,14 +242,13 @@ export class AgentOrchestrator {
           onAgentProgress(`General complete: Found ${Object.keys(generalResults).length} fields`, 'success');
         }
         Object.assign(enrichments, generalResults);
-        
         for (const [field, value] of Object.entries(generalResults)) {
           if (value && onProgress) {
             onProgress(field, value);
           }
         }
       }
-      
+
       // Convert to enrichment result format
       const enrichmentResults = this.formatEnrichmentResults(enrichments, fields);
       
@@ -311,24 +320,34 @@ export class AgentOrchestrator {
       const name = field.name.toLowerCase();
       const desc = field.description.toLowerCase();
       
+      console.log(`[Orchestrator] Categorizing field: ${field.name} (${field.description})`);
+      console.log(`[Orchestrator] - name.toLowerCase(): "${name}"`);
+      console.log(`[Orchestrator] - desc.toLowerCase(): "${desc}"`);
+      
       if (name.includes('company') && name.includes('name') || 
           name.includes('website') || 
-          name.includes('description') && name.includes('company') ||
+          name.includes('description') ||
           desc.includes('company name') ||
-          desc.includes('company description')) {
+          desc.includes('company description') ||
+          desc.includes('what the company does') ||
+          desc.includes('description of')) {
+        console.log(`[Orchestrator] → Assigned to DISCOVERY phase`);
         categories.discovery.push(field);
       } else if (name.includes('industry') || 
                  name.includes('location') || 
                  name.includes('headquarter') ||
                  name.includes('founded')) {
+        console.log(`[Orchestrator] → Assigned to PROFILE phase`);
         categories.profile.push(field);
       } else if (name.includes('employee') || 
                  name.includes('revenue') || 
                  name.includes('size')) {
+        console.log(`[Orchestrator] → Assigned to METRICS phase`);
         categories.metrics.push(field);
       } else if (name.includes('fund') || 
                  name.includes('invest') || 
                  name.includes('valuation')) {
+        console.log(`[Orchestrator] → Assigned to FUNDING phase`);
         categories.funding.push(field);
       } else if (name.includes('tech') && name.includes('stack') || 
                  name.includes('technolog') || 
@@ -338,11 +357,21 @@ export class AgentOrchestrator {
                  desc.includes('tech stack') ||
                  desc.includes('programming') ||
                  desc.includes('technology')) {
+        console.log(`[Orchestrator] → Assigned to TECH-STACK phase`);
         categories.techStack.push(field);
       } else {
+        console.log(`[Orchestrator] → Assigned to OTHER phase`);
         categories.other.push(field);
       }
     }
+    
+    console.log(`[Orchestrator] Field categorization complete:`);
+    console.log(`[Orchestrator] - Discovery: ${categories.discovery.map(f => f.name).join(', ')}`);
+    console.log(`[Orchestrator] - Profile: ${categories.profile.map(f => f.name).join(', ')}`);
+    console.log(`[Orchestrator] - Metrics: ${categories.metrics.map(f => f.name).join(', ')}`);
+    console.log(`[Orchestrator] - Funding: ${categories.funding.map(f => f.name).join(', ')}`);
+    console.log(`[Orchestrator] - Tech Stack: ${categories.techStack.map(f => f.name).join(', ')}`);
+    console.log(`[Orchestrator] - Other: ${categories.other.map(f => f.name).join(', ')}`);
     
     return categories;
   }
@@ -422,9 +451,14 @@ export class AgentOrchestrator {
             f.name.toLowerCase().includes('description') || 
             f.description.toLowerCase().includes('description')
           );
+          console.log(`[AGENT-DISCOVERY] Looking for description field. Found: ${descField ? descField.name : 'none'}`);
+          console.log(`[AGENT-DISCOVERY] Available fields: ${fields.map(f => `${f.name}(${f.description})`).join(', ')}`);
+          
           if (descField) {
+            console.log(`[AGENT-DISCOVERY] Attempting to extract description from ${scraped.data.markdown?.length || 0} chars of markdown`);
             const description = this.extractDescription({ markdown: scraped.data.markdown, metadata: scraped.data as Record<string, unknown> });
             if (description) {
+              console.log(`[AGENT-DISCOVERY] Successfully extracted description: ${description.substring(0, 100)}...`);
               if (onAgentProgress) {
                 onAgentProgress(`Extracted company description (${description.length} chars)`, 'success');
               }
@@ -438,6 +472,8 @@ export class AgentOrchestrator {
                   snippet: description.substring(0, 200) + (description.length > 200 ? '...' : '')
                 }]
               };
+            } else {
+              console.log(`[AGENT-DISCOVERY] Failed to extract description from website content`);
             }
           }
         }
@@ -459,6 +495,16 @@ export class AgentOrchestrator {
     if (missingFields.length > 0) {
       console.log(`[AGENT-DISCOVERY] Missing fields after direct scrape: ${missingFields.map(f => f.name).join(', ')}`);
       console.log('[AGENT-DISCOVERY] Initiating search phase...');
+      
+      // Check if we have description fields that failed - provide a fallback
+      const missingDescFields = missingFields.filter(f => 
+        f.name.toLowerCase().includes('description') || 
+        f.description.toLowerCase().includes('description')
+      );
+      
+      if (missingDescFields.length > 0) {
+        console.log(`[AGENT-DISCOVERY] Found ${missingDescFields.length} missing description fields, will attempt search fallback`);
+      }
       
       // Build search queries in order of priority
       const searchQueries = [];
@@ -1822,13 +1868,13 @@ export class AgentOrchestrator {
       }
     }
     
-    // Check if content is too short (likely a placeholder)
-    if (markdown.length < 200) {
-      console.log(`[ORCHESTRATOR] Content too short (${markdown.length} chars), likely placeholder`);
+    // Relaxed content length requirement (was 200, now 50)
+    if (markdown.length < 50) {
+      console.log(`[ORCHESTRATOR] Content too short (${markdown.length} chars), likely empty page`);
       return false;
     }
     
-    // Check for minimum legitimate content indicators
+    // Expanded legitimate content indicators - be more permissive
     const hasLegitimateContent = 
       markdown.includes('about') ||
       markdown.includes('product') ||
@@ -1837,13 +1883,40 @@ export class AgentOrchestrator {
       markdown.includes('team') ||
       markdown.includes('company') ||
       markdown.includes('we ') ||
-      markdown.includes('our ');
+      markdown.includes('our ') ||
+      markdown.includes('home') ||
+      markdown.includes('welcome') ||
+      markdown.includes('solution') ||
+      markdown.includes('platform') ||
+      markdown.includes('technology') ||
+      markdown.includes('software') ||
+      markdown.includes('business') ||
+      markdown.includes('help') ||
+      markdown.includes('provide') ||
+      markdown.includes('build') ||
+      markdown.includes('create') ||
+      markdown.includes('enable') ||
+      markdown.includes('offer') ||
+      markdown.includes('deliver') ||
+      markdown.includes('mission') ||
+      markdown.includes('vision') ||
+      markdown.includes('founded') ||
+      markdown.includes('established') ||
+      markdown.includes('since ') ||
+      markdown.includes('leading') ||
+      markdown.includes('innovative') ||
+      // Check if there's any substantial text content (multiple sentences)
+      (markdown.split('.').length > 3 && markdown.length > 100) ||
+      // Check if metadata has a proper title
+      (title && title.length > 5 && !title.includes('404') && !title.includes('error'));
     
     if (!hasLegitimateContent) {
-      console.log(`[ORCHESTRATOR] No legitimate company content indicators found`);
+      console.log(`[ORCHESTRATOR] No legitimate company content indicators found in ${markdown.length} chars`);
+      console.log(`[ORCHESTRATOR] Sample content: ${markdown.substring(0, 200)}...`);
       return false;
     }
     
+    console.log(`[ORCHESTRATOR] Valid company website detected (${markdown.length} chars)`);
     return true;
   }
 
@@ -1952,6 +2025,8 @@ export class AgentOrchestrator {
   }
   
   private extractDescription(scraped: { markdown?: string; metadata?: { description?: string; title?: string } }): string | null {
+    console.log(`[ORCHESTRATOR] Starting description extraction from ${scraped.markdown?.length || 0} chars`);
+    
     // First check if this is a valid company website
     if (!this.isValidCompanyWebsite(scraped)) {
       console.log('[ORCHESTRATOR] Invalid company website detected, skipping description extraction');
@@ -1961,19 +2036,85 @@ export class AgentOrchestrator {
     const metadata = scraped.metadata || {};
     const markdown = scraped.markdown || '';
     
-    // Try meta description
+    console.log(`[ORCHESTRATOR] Website validation passed. Metadata description: ${metadata.description ? 'exists' : 'none'}`);
+    
+    // Try meta description first (most reliable)
     if (metadata.description && typeof metadata.description === 'string' && metadata.description.length > 20) {
-      return metadata.description;
+      const cleaned = metadata.description.trim();
+      if (cleaned.length > 30 && cleaned.length < 500) {
+        console.log(`[ORCHESTRATOR] Found description in meta tag: ${cleaned.substring(0, 100)}...`);
+        return cleaned;
+      } else {
+        console.log(`[ORCHESTRATOR] Meta description too short/long: ${cleaned.length} chars`);
+      }
     }
     
-    // Look for about sections
-    const aboutMatch = markdown.match(
-      /(?:About|Mission|What\s+We\s+Do)[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i
-    );
-    if (aboutMatch) {
-      return aboutMatch[1].trim().replace(/\n+/g, ' ');
+    // Enhanced patterns for finding company descriptions
+    const descriptionPatterns = [
+      // About sections
+      /(?:About\s+(?:Us|Our\s+Company|[A-Z][a-z]+))[\s:]+([^\n]+(?:\n[^\n]+){0,3})/i,
+      /(?:Our\s+)?(?:Mission|Vision|Purpose)[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
+      /What\s+We\s+Do[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
+      
+      // Company description patterns
+      /We\s+(?:are|help|provide|build|create|enable|empower|offer|deliver)\s+([^\n.!?]+[.!?])/i,
+      /(?:^|\n)([A-Z][^.!?]*(?:helps?|provides?|builds?|creates?|enables?|empowers?|offers?|delivers?)[^.!?]*[.!?])/m,
+      /(?:^|\n)([A-Z][^.!?]*(?:platform|solution|service|software|technology|tool)[^.!?]*[.!?])/m,
+      
+      // Leading company in X pattern
+      /(?:^|\n)([A-Z][^.!?]*(?:leading|premier|top|innovative)[^.!?]*(?:company|provider|solution)[^.!?]*[.!?])/m,
+      
+      // Company name + description pattern
+      /(?:^|\n)([A-Z][a-zA-Z\s&.]+\s+(?:is|was)\s+[^.!?]+[.!?])/m,
+    ];
+    
+    console.log(`[ORCHESTRATOR] Trying ${descriptionPatterns.length} description patterns on markdown`);
+    for (let i = 0; i < descriptionPatterns.length; i++) {
+      const pattern = descriptionPatterns[i];
+      const match = markdown.match(pattern);
+      if (match && match[1]) {
+        console.log(`[ORCHESTRATOR] Pattern ${i + 1} matched: ${match[1].substring(0, 100)}...`);
+        const desc = match[1].trim()
+          .replace(/\n+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .replace(/^\s*[-•]\s*/, '') // Remove bullet points
+          .replace(/^[A-Z][a-z]+\s+is\s+/, ''); // Remove "Company is" prefix
+        
+        // Validate description quality
+        if (desc.length > 30 && desc.length < 500 && 
+            !desc.toLowerCase().includes('lorem ipsum') &&
+            !desc.toLowerCase().includes('placeholder') &&
+            desc.split(' ').length > 5) {
+          console.log(`[ORCHESTRATOR] Found valid description with pattern ${i + 1}: ${desc.substring(0, 100)}...`);
+          return desc;
+        } else {
+          console.log(`[ORCHESTRATOR] Pattern ${i + 1} match rejected: length=${desc.length}, words=${desc.split(' ').length}`);
+        }
+      }
     }
     
+    // Try to find first substantial paragraph as fallback
+    console.log(`[ORCHESTRATOR] Trying paragraph fallback approach`);
+    const paragraphs = markdown.split(/\n\s*\n/).filter(p => {
+      const cleaned = p.trim();
+      return cleaned.length > 50 && 
+             cleaned.length < 500 &&
+             !cleaned.toLowerCase().includes('cookie') &&
+             !cleaned.toLowerCase().includes('privacy') &&
+             !cleaned.toLowerCase().includes('terms') &&
+             cleaned.split(' ').length > 8;
+    });
+    
+    console.log(`[ORCHESTRATOR] Found ${paragraphs.length} suitable paragraphs`);
+    if (paragraphs.length > 0) {
+      const firstPara = paragraphs[0].trim()
+        .replace(/\n+/g, ' ')
+        .replace(/\s+/g, ' ');
+      console.log(`[ORCHESTRATOR] Using first substantial paragraph as description: ${firstPara.substring(0, 100)}...`);
+      return firstPara.substring(0, 400);
+    }
+    
+    console.log('[ORCHESTRATOR] No suitable description found');
     return null;
   }
   
@@ -2130,17 +2271,9 @@ IMPORTANT: Only extract information that is clearly about the company associated
           }]
         };
       } else if (fieldName.includes('description')) {
-        // Generic description based on domain
-        results[field.name] = {
-          field: field.name,
-          value: `${cleanedName} is a company that operates the ${emailContext.companyDomain} domain.`,
-          confidence: 0.2, // Very low confidence
-          source: 'Inferred from domain',
-          sourceContext: [{
-            url: `https://${emailContext.companyDomain}`,
-            snippet: `No company description found - generic inference from domain`
-          }]
-        };
+        // Don't provide generic descriptions - better to return null
+        // This will force the system to try harder to find real descriptions
+        console.log(`[AGENT-DISCOVERY] Skipping generic description for ${field.name} - will attempt real extraction`);
       }
     }
     

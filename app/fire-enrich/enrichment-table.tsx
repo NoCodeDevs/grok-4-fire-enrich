@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { CSVRow, EnrichmentField, RowEnrichmentResult } from '@/lib/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SourceContextTooltip } from './source-context-tooltip';
@@ -8,17 +8,45 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Download, X, Copy, ExternalLink, Globe, Mail, Check, ChevronDown, ChevronUp, Activity, CheckCircle, AlertCircle, Info, Star, Send, Zap } from 'lucide-react';
+import { 
+  Download, 
+  X, 
+  Copy, 
+  ExternalLink, 
+  Globe, 
+  Mail, 
+  Check, 
+  ChevronDown, 
+  ChevronUp, 
+  Activity, 
+  CheckCircle, 
+  AlertCircle, 
+  Info, 
+  Star, 
+  Send, 
+  Zap,
+  Search,
+  Filter,
+  Eye,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  FilterX
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { PersonalizedEmail } from '@/lib/types/lead-scoring';
+import { Input } from '@/components/ui/input';
 
 interface EnrichmentTableProps {
   rows: CSVRow[];
   fields: EnrichmentField[];
   emailColumn?: string;
+  onReset?: () => void;
 }
 
-export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTableProps) {
+export function EnrichmentTable({ rows, fields, emailColumn, onReset }: EnrichmentTableProps) {
   const [results, setResults] = useState<Map<number, RowEnrichmentResult>>(new Map());
   const [status, setStatus] = useState<'idle' | 'processing' | 'completed' | 'cancelled'>('idle');
   const [currentRow, setCurrentRow] = useState(-1);
@@ -42,13 +70,27 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
   const agentMessagesEndRef = useRef<HTMLDivElement>(null);
   const activityScrollRef = useRef<HTMLDivElement>(null);
 
-  // Email generation state
-  const [emailModal, setEmailModal] = useState<{
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Sorting and filtering states
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+
+  // Source modal state
+  const [sourceModal, setSourceModal] = useState<{
     isOpen: boolean;
-    email: PersonalizedEmail | null;
-    loading: boolean;
-    rowIndex: number;
-  }>({ isOpen: false, email: null, loading: false, rowIndex: -1 });
+    url: string;
+    domain: string;
+    snippet?: string;
+    sources?: Array<{ url: string; snippet?: string }>;
+    count?: number;
+    legacySource?: string;
+  }>({ isOpen: false, url: '', domain: '' });
 
   // Track when each row's data arrives
   const [rowDataArrivalTime, setRowDataArrivalTime] = useState<Map<number, number>>(new Map());
@@ -84,6 +126,89 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     // Add delay based on field position
     return fieldIndex * delayPerCell;
   }, [rowDataArrivalTime, fields.length]);
+
+  // Enhanced filtering and sorting logic
+  const filteredAndSortedRows = React.useMemo(() => {
+    // First filter rows
+    let filtered = rows.map((row, index) => ({ row, originalIndex: index })).filter(({ row, originalIndex }) => {
+      const result = results.get(originalIndex);
+      const email = emailColumn ? row[emailColumn] : Object.values(row)[0];
+      
+      // Search filter
+      const matchesSearch = searchTerm === '' || 
+        email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        Object.values(row).some(value => 
+          value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        ) ||
+        fields.some(field => {
+          const enrichment = result?.enrichments[field.name];
+          const value = enrichment?.value;
+          return value?.toString().toLowerCase().includes(searchTerm.toLowerCase());
+        });
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'completed' && result?.status === 'completed') ||
+        (statusFilter === 'processing' && (currentRow === originalIndex || !result)) ||
+        (statusFilter === 'failed' && result?.status === 'error') ||
+        (statusFilter === 'skipped' && result?.status === 'skipped');
+      
+      // Column-specific filters
+      const matchesColumnFilters = Object.entries(columnFilters).every(([fieldName, filterValue]) => {
+        if (!filterValue) return true;
+        
+        if (fieldName === 'email') {
+          return email?.toLowerCase().includes(filterValue.toLowerCase());
+        }
+        
+        const result = results.get(originalIndex);
+        const enrichment = result?.enrichments[fieldName];
+        const value = enrichment?.value;
+        
+        if (value === null || value === undefined) return false;
+        return value.toString().toLowerCase().includes(filterValue.toLowerCase());
+      });
+      
+      return matchesSearch && matchesStatus && matchesColumnFilters;
+    });
+
+    // Then sort
+    if (sortField) {
+      filtered.sort((a, b) => {
+        let aValue, bValue;
+        
+        if (sortField === 'email') {
+          aValue = emailColumn ? a.row[emailColumn] : Object.values(a.row)[0];
+          bValue = emailColumn ? b.row[emailColumn] : Object.values(b.row)[0];
+        } else if (sortField === 'status') {
+          const aResult = results.get(a.originalIndex);
+          const bResult = results.get(b.originalIndex);
+          aValue = aResult?.status || 'pending';
+          bValue = bResult?.status || 'pending';
+        } else {
+          const aResult = results.get(a.originalIndex);
+          const bResult = results.get(b.originalIndex);
+          aValue = aResult?.enrichments[sortField]?.value;
+          bValue = bResult?.enrichments[sortField]?.value;
+        }
+        
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) aValue = '';
+        if (bValue === null || bValue === undefined) bValue = '';
+        
+        // Convert to strings for comparison
+        const aStr = aValue.toString().toLowerCase();
+        const bStr = bValue.toString().toLowerCase();
+        
+        const comparison = aStr.localeCompare(bStr);
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return filtered;
+  }, [rows, results, searchTerm, statusFilter, columnFilters, sortField, sortDirection, emailColumn, fields, currentRow]);
+
+  const filteredRows = filteredAndSortedRows.map(item => item.row);
 
   const startEnrichment = useCallback(async () => {
     setStatus('processing');
@@ -234,48 +359,6 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     }
   };
 
-  // Email generation function
-  const generatePersonalizedEmail = async (rowIndex: number) => {
-    const result = results.get(rowIndex);
-    
-    if (!result || !emailColumn) return;
-
-    const email = result.originalData[emailColumn];
-    if (!email) return;
-
-    setEmailModal(prev => ({ ...prev, loading: true, rowIndex }));
-
-    try {
-      const response = await fetch('/api/generate-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enrichedData: result.enrichments,
-          email,
-          senderName: 'Your Name', // Could be made configurable
-          senderCompany: 'Your Company', // Could be made configurable
-          tone: 'professional'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate email');
-      }
-
-      const data = await response.json();
-      setEmailModal({
-        isOpen: true,
-        email: data.email,
-        loading: false,
-        rowIndex
-      });
-    } catch (error) {
-      console.error('Email generation error:', error);
-      toast.error('Failed to generate personalized email');
-      setEmailModal(prev => ({ ...prev, loading: false }));
-    }
-  };
-
   const downloadCSV = () => {
     // Build headers
     const headers = [
@@ -341,113 +424,6 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     URL.revokeObjectURL(url);
   };
 
-  const downloadJSON = () => {
-    const exportData = {
-      metadata: {
-        exportDate: new Date().toISOString(),
-        totalRows: rows.length,
-        processedRows: results.size,
-        fields: fields.map(f => ({
-          name: f.name,
-          displayName: f.displayName,
-          type: f.type
-        })),
-        status: status
-      },
-      data: rows.map((row, index) => {
-        const result = results.get(index);
-        const email = emailColumn ? row[emailColumn] : Object.values(row)[0];
-        
-        const enrichedRow: Record<string, unknown> = {
-          _index: index,
-          _email: email,
-          _original: row,
-          _status: result ? 'enriched' : 'pending'
-        };
-        
-        if (result) {
-          fields.forEach(field => {
-            const enrichment = result.enrichments[field.name];
-            if (enrichment) {
-              enrichedRow[field.name] = {
-                value: enrichment.value,
-                confidence: enrichment.confidence,
-                sources: enrichment.sourceContext?.map(s => s.url) || 
-                        (enrichment.source ? enrichment.source.split(', ') : [])
-              };
-            }
-          });
-        }
-        
-        return enrichedRow;
-      })
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `enriched_data_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadSkippedEmails = () => {
-    // Get all skipped rows
-    const skippedRows = rows.filter((_, index) => {
-      const result = results.get(index);
-      return result?.status === 'skipped';
-    });
-
-    if (skippedRows.length === 0) {
-      return;
-    }
-
-    // Create CSV header
-    const headers = Object.keys(skippedRows[0]);
-    const csvRows = [headers.join(',')];
-
-    // Add skipped rows with skip reason
-    skippedRows.forEach((row, index) => {
-      const originalIndex = rows.findIndex(r => r === row);
-      const result = results.get(originalIndex);
-      const values = headers.map(header => {
-        const value = row[header];
-        // Escape quotes and wrap in quotes if necessary
-        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value || '';
-      });
-      
-      // Add skip reason as last column
-      if (index === 0) {
-        csvRows[0] += ',Skip Reason';
-      }
-      values.push(result?.error || 'Personal email provider');
-      
-      csvRows.push(values.join(','));
-    });
-
-    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `skipped_emails_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-
   const copyRowData = (rowIndex: number) => {
     const result = results.get(rowIndex);
     const row = rows[rowIndex];
@@ -477,7 +453,7 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
       formattedData += '\n\n';
     });
     
-    copyToClipboard(formattedData.trim());
+    navigator.clipboard.writeText(formattedData.trim());
     
     // Show copied feedback
     setCopiedRow(rowIndex);
@@ -491,436 +467,620 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
     setSelectedRow({ isOpen: true, row, result, index: rowIndex });
   };
 
+  const openSourceModal = (url: string, domain: string, snippet?: string) => {
+    setSourceModal({ isOpen: true, url, domain, snippet });
+  };
+
+  // Sorting and filtering helper functions
+  const handleSort = (fieldName: string) => {
+    if (sortField === fieldName) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(fieldName);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleColumnFilter = (fieldName: string, value: string) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
+  const toggleRowSelection = (index: number) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllRows = () => {
+    if (selectedRows.size === filteredAndSortedRows.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(filteredAndSortedRows.map(item => item.originalIndex)));
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <Card className="p-4 bg-card border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            {/* Progress indicator */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  status === 'processing' ? 'bg-primary/10' : 
-                  status === 'completed' ? 'bg-green-500/10' : 
-                  'bg-red-500/10'
-                }`}>
-                  {status === 'processing' ? (
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  ) : status === 'completed' ? (
-                    <Check className="w-6 h-6 text-green-400" />
-                  ) : (
-                    <X className="w-6 h-6 text-red-400" />
-                  )}
-                </div>
-              </div>
-              
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      {/* App Header */}
+      <div className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Fire Enrich
+          </div>
+          <div className="text-sm text-gray-400">
+            Enrichment Results
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {onReset && (
+            <Button
+              onClick={onReset}
+              variant="outline"
+              size="sm"
+              className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+            >
+              Start New Enrichment
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Main App Content */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left Sidebar - Agent Activity */}
+      <div className={`${sidebarCollapsed ? 'w-12' : 'w-80'} bg-gray-900 border-r border-gray-800 transition-all duration-300 flex flex-col`}>
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-blue-400" />
+              <h3 className="font-semibold text-white">Agent Activity</h3>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="text-gray-400 hover:text-white hover:bg-gray-800"
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </Button>
+        </div>
+
+        {/* Progress Status */}
+        {!sidebarCollapsed && (
+          <div className="p-4 border-b border-gray-800">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-3 h-3 rounded-full ${
+                status === 'processing' ? 'bg-blue-500 animate-pulse' : 
+                status === 'completed' ? 'bg-green-500' : 
+                'bg-red-500'
+              }`} />
               <div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  {status === 'processing' ? 'Enriching Data' : 
-                   status === 'completed' ? 'Enrichment Complete' : 
-                   'Enrichment Cancelled'}
-                </h3>
-                <div className="flex flex-col gap-0.5 mt-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {results.size} of {rows.length} rows processed
-                  </span>
-                  {(() => {
-                    const allResults = Array.from(results.values());
-                    const skippedResults = allResults.filter(r => r.status === 'skipped');
-                    const skippedCount = skippedResults.length;
-                    if (skippedCount > 0) {
-                      return (
-                        <span className="text-xs text-amber-400 font-medium">
-                          {skippedCount} common email providers skipped (Gmail, Outlook, etc.)
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                  {status === 'processing' && currentRow >= 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Currently processing row {currentRow + 1}
-                    </span>
-                  )}
+                <div className="text-sm font-medium text-white">
+                  {status === 'processing' ? 'Processing' : 
+                   status === 'completed' ? 'Complete' : 
+                   'Cancelled'}
+                </div>
+                <div className="text-xs text-gray-400">
+                  {results.size} of {rows.length} processed
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {(status === 'completed' || status === 'cancelled' || (status === 'processing' && results.size > 0)) && (
-              <div className="flex items-center gap-3">
-                {(() => {
-                  const skippedCount = Array.from(results.values()).filter(r => r.status === 'skipped').length;
-                  if (skippedCount > 0) {
-                    return (
-                      <Button
-                        onClick={downloadSkippedEmails}
-                        variant="orange"
-                        size="sm"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Skipped Emails CSV
-                      </Button>
-                    );
-                  }
-                  return null;
-                })()}
-                <Button
-                  onClick={downloadCSV}
-                  variant="orange"
-                  size="sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
-                <Button
-                  onClick={downloadJSON}
-                  className="bg-black text-white hover:bg-zinc-900 shadow-lg shadow-black/20 dark:shadow-black/40"
-                  size="sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  JSON
-                </Button>
-              </div>
-            )}
             
-            {/* Cancel button moved to the end */}
             {status === 'processing' && (
               <Button
                 onClick={cancelEnrichment}
                 variant="outline"
                 size="sm"
-                className="text-red-400 hover:text-red-300 border-red-500/20 hover:border-red-500/30 hover:bg-red-500/10"
+                className="w-full text-red-400 border-red-800 hover:bg-red-900/20"
               >
-                <X className="w-3 h-3 mr-1.5" />
-                Cancel
+                Cancel Processing
               </Button>
             )}
           </div>
-        </div>
-      </Card>
+        )}
 
-      {/* Agent Progress Messages */}
-      {agentMessages.length > 0 && (
-        <Card className="p-3 bg-card border-border">
-          <h4 className="text-sm font-semibold text-foreground mb-2">
-            Agent Activity Log
-          </h4>
-          <div ref={activityScrollRef} className="space-y-1 max-h-32 overflow-y-auto pr-2 text-xs">
-            {agentMessages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex items-start gap-2 py-0.5 ${
-                  msg.type === 'agent' ? 'text-primary' :
-                  msg.type === 'success' ? 'text-green-400' :
-                  msg.type === 'warning' ? 'text-amber-400' :
-                  'text-muted-foreground'
-                }`}
-              >
-                <span className="flex-shrink-0 mt-0.5">
-                  {msg.type === 'agent' ? <Activity className="w-3 h-3" /> :
-                   msg.type === 'success' ? <CheckCircle className="w-3 h-3" /> :
-                   msg.type === 'warning' ? <AlertCircle className="w-3 h-3" /> :
-                   <Info className="w-3 h-3" />}
-                </span>
-                <span className="flex-1">
-                  {msg.rowIndex !== undefined && (
-                    <span className="font-medium">Row {msg.rowIndex + 1}: </span>
-                  )}
-                  {msg.message}
-                </span>
-              </div>
-            ))}
-            <div ref={agentMessagesEndRef} />
+        {/* Agent Messages */}
+        {!sidebarCollapsed && (
+          <div className="flex-1 overflow-hidden">
+            <div ref={activityScrollRef} className="h-full overflow-y-auto p-3 space-y-1 bg-black/20 font-mono">
+              {agentMessages.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <div className="text-xs font-mono">~ waiting for agent activity ~</div>
+                </div>
+              ) : (
+                agentMessages.slice().reverse().map((msg, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs leading-tight">
+                    <div className={`w-1 h-1 rounded-full flex-shrink-0 ${
+                      msg.type === 'agent' ? 'bg-blue-400 animate-pulse' :
+                      msg.type === 'success' ? 'bg-green-400' :
+                      msg.type === 'warning' ? 'bg-amber-400' :
+                      'bg-gray-400'
+                    }`} />
+                    <span className="text-gray-500 flex-shrink-0">
+                      {new Date(msg.timestamp).toLocaleTimeString('en-US', { 
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit' 
+                      })}
+                    </span>
+                    {msg.rowIndex !== undefined && (
+                      <span className="text-gray-400 flex-shrink-0">
+                        [row:{msg.rowIndex + 1}]
+                      </span>
+                    )}
+                    <span className="text-gray-300 truncate">
+                      {msg.message}
+                    </span>
+                  </div>
+                ))
+              )}
+              <div ref={agentMessagesEndRef} />
+            </div>
           </div>
-        </Card>
-      )}
+        )}
+      </div>
 
-      <div className="overflow-hidden rounded-lg shadow-sm border border-border bg-card">
-        <div className="overflow-x-auto">
-          <table className="min-w-full relative">
-          <thead>
-            <tr className="border-b-2 border-primary/20">
-              <th className="sticky left-0 z-10 bg-card px-4 py-3 text-left text-sm font-semibold text-foreground border-r-2 border-primary shadow-[2px_0_8px_rgba(168,85,247,0.3)]">
-                {emailColumn || 'Email'}
-              </th>
-              {fields.map(field => (
-                <th key={field.name} className="px-4 py-3 text-left text-sm font-medium text-foreground bg-muted/50">
-                  {field.displayName}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => {
-              const result = results.get(index);
-              const isProcessing = currentRow === index && status === 'processing';
-              
-              return (
-                <tr key={index} className={`
-                  ${isProcessing ? 'animate-processing-row' : 
-                    index % 2 === 0 ? 'bg-card' : 'bg-muted/20'} 
-                  hover:bg-primary/10 transition-all duration-300 group
-                `}>
-                  <td className={`
-                    sticky left-0 z-10 px-4 py-2 text-sm font-medium
-                    ${isProcessing ? 'bg-primary/10' : 'bg-card'}
-                    border-r-2 border-primary shadow-[2px_0_8px_rgba(168,85,247,0.3)]
-                  `}>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        {result && (
-                          <div className="relative group/copy">
-                            <button
-                              onClick={() => copyRowData(index)}
-                              className="text-orange-400 hover:text-orange-600 transition-all duration-200 hover:scale-110"
-                              title="Copy row data"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap opacity-0 group-hover/copy:opacity-100 transition-opacity pointer-events-none z-[100]">
-                              Copy row
-                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
-                            </span>
-                            {copiedRow === index && (
-                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap z-[100] animate-fade-in">
-                                Copied!
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
-                              </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Bulk Actions Toolbar */}
+        {selectedRows.size > 0 && (
+          <div className="bg-blue-900/20 border-b border-blue-700/50 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="text-sm font-medium text-blue-300">
+                  {selectedRows.size} row{selectedRows.size !== 1 ? 's' : ''} selected
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Copy all selected rows
+                      const selectedData = Array.from(selectedRows).map(index => {
+                        const row = rows[index];
+                        const result = results.get(index);
+                        const email = emailColumn ? row[emailColumn] : Object.values(row)[0];
+                        
+                        let formattedData = `Email: ${email}\n`;
+                        fields.forEach(field => {
+                          const enrichment = result?.enrichments[field.name];
+                          const value = enrichment?.value;
+                          formattedData += `${field.displayName}: ${value || 'Not found'}\n`;
+                        });
+                        return formattedData;
+                      }).join('\n---\n');
+                      
+                      navigator.clipboard.writeText(selectedData);
+                      toast.success(`Copied ${selectedRows.size} rows to clipboard!`);
+                    }}
+                    className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedRows(new Set())}
+                    className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Top Toolbar */}
+        <div className="bg-gray-900 border-b border-gray-800 p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={selectAllRows}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                    selectedRows.size === filteredAndSortedRows.length && filteredAndSortedRows.length > 0
+                      ? 'bg-blue-500 border-blue-500' 
+                      : selectedRows.size > 0
+                      ? 'bg-blue-500/50 border-blue-500'
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                  title={selectedRows.size === filteredAndSortedRows.length ? "Deselect all" : "Select all"}
+                >
+                  {selectedRows.size === filteredAndSortedRows.length && filteredAndSortedRows.length > 0 ? (
+                    <Check className="w-3 h-3 text-white" />
+                  ) : selectedRows.size > 0 ? (
+                    <div className="w-2 h-2 bg-white rounded-sm" />
+                  ) : null}
+                </button>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search contacts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-64 bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                  />
+                </div>
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="processing">Processing</option>
+                <option value="failed">Failed</option>
+                <option value="skipped">Skipped</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={downloadCSV} className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700">
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Dark Table */}
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-auto pr-6">
+            <table className="w-full">
+              {/* Header */}
+              <thead className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
+                <tr>
+                  {/* Contact Column Header */}
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wide sticky left-0 bg-gray-800 z-20 min-w-[180px] max-w-[200px] border-r border-gray-700/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3 h-3 text-blue-400" />
+                        <span className="text-gray-200 text-xs">Contact</span>
+                      </div>
+                      <button
+                        onClick={() => handleSort('email')}
+                        className="p-0.5 hover:bg-gray-700 rounded transition-colors"
+                      >
+                        {sortField === 'email' ? (
+                          sortDirection === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-400" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-400" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-500 hover:text-gray-300" />
+                        )}
+                      </button>
+                    </div>
+                  </th>
+                  
+                  {/* Field Column Headers */}
+                  {fields.map((field) => (
+                    <th key={field.name} className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wide min-w-[120px] border-r border-gray-700/30">
+                      <div className="flex items-center justify-between">
+                        <span className="break-words text-xs leading-tight text-gray-200 truncate">{field.displayName}</span>
+                        <button
+                          onClick={() => handleSort(field.name)}
+                          className="p-0.5 hover:bg-gray-700 rounded transition-colors ml-1 flex-shrink-0"
+                        >
+                          {sortField === field.name ? (
+                            sortDirection === 'asc' ? (
+                              <ArrowUp className="w-3 h-3 text-blue-400" />
+                            ) : (
+                              <ArrowDown className="w-3 h-3 text-blue-400" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-gray-500 hover:text-gray-300" />
+                          )}
+                        </button>
+                      </div>
+                    </th>
+                  ))}
+                  
+                  {/* Actions Column Header */}
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wide w-16">
+                    <span className="text-gray-200 text-xs">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+
+              {/* Body */}
+              <tbody className="bg-gray-950 divide-y divide-gray-800/30">
+                {filteredRows.map((row, filteredIndex) => {
+                  const originalIndex = rows.indexOf(row);
+                  const result = results.get(originalIndex);
+                  const isProcessing = currentRow === originalIndex && status === 'processing';
+                  const email = emailColumn ? row[emailColumn] : Object.values(row)[0];
+                  const isSelected = selectedRows.has(originalIndex);
+                  
+                  return (
+                    <tr 
+                      key={originalIndex} 
+                      className={`group transition-all duration-150 hover:bg-gray-800/30 border-l ${
+                        isSelected ? 'border-l-blue-500 bg-blue-950/10' :
+                        isProcessing ? 'border-l-orange-500 bg-blue-900/10' : 
+                        result?.status === 'completed' ? 'border-l-green-500/50' :
+                        result?.status === 'error' ? 'border-l-red-500/50' :
+                        'border-l-transparent hover:border-l-gray-600'
+                      } ${
+                        isProcessing ? 'bg-blue-900/10' : 
+                        isSelected ? 'bg-blue-950/10' :
+                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/20'
+                      }`}
+                      onClick={() => toggleRowSelection(originalIndex)}
+                    >
+                      {/* Contact Column - Sticky */}
+                      <td className={`px-3 py-2 sticky left-0 z-10 border-r border-gray-700/30 transition-colors ${
+                        isProcessing ? 'bg-blue-900/10' : 
+                        isSelected ? 'bg-blue-950/10' :
+                        filteredIndex % 2 === 0 ? 'bg-gray-950' : 'bg-gray-900/20'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {/* Row Selection Checkbox */}
+                          <div className="flex-shrink-0">
+                            <div className={`w-3 h-3 rounded border flex items-center justify-center transition-all ${
+                              isSelected 
+                                ? 'bg-blue-500 border-blue-500' 
+                                : 'border-gray-600 group-hover:border-gray-500'
+                            }`}>
+                              {isSelected && <Check className="w-2 h-2 text-white" />}
+                            </div>
+                          </div>
+                          
+                          {/* Status Icon */}
+                          <div className="flex-shrink-0">
+                            {isProcessing ? (
+                              <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin" />
+                            ) : result?.status === 'completed' ? (
+                              <CheckCircle className="w-3 h-3 text-green-400" />
+                            ) : result?.status === 'error' ? (
+                              <AlertCircle className="w-3 h-3 text-red-400" />
+                            ) : result?.status === 'skipped' ? (
+                              <Info className="w-3 h-3 text-amber-400" />
+                            ) : (
+                              <div className="w-3 h-3 border border-gray-600 rounded-full" />
                             )}
                           </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <div className="text-foreground font-mono text-sm truncate max-w-[180px]">
-                            {emailColumn ? row[emailColumn] : Object.values(row)[0]}
+                          
+                          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                            {email?.charAt(0)?.toUpperCase() || '?'}
                           </div>
-                          {/* Show additional columns if CSV has many columns */}
-                          {Object.keys(row).length > fields.length + 1 && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              {Object.keys(row).slice(1, 3).map((key, idx) => (
-                                <span key={idx} className="truncate max-w-[60px]" title={row[key]}>
-                                  {idx > 0 && ', '}{row[key]}
-                                </span>
-                              ))}
-                              {Object.keys(row).length > 3 && (
-                                <span className="text-muted-foreground font-medium">
-                                  +{Object.keys(row).length - 3} more
-                                </span>
-                              )}
+                          
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-medium text-white break-words leading-tight">
+                              {email}
                             </div>
-                          )}
+                            <div className="text-xs text-gray-500 leading-tight">
+                              #{originalIndex + 1}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <button
-                          onClick={() => openDetailSidebar(index)}
-                          className="text-primary hover:text-primary/80 font-medium hover:underline"
-                        >
-                          View details →
-                        </button>
-                        {/* Removed lead score badge and email button */}
-                      </div>
-                    </div>
-                  </td>
-                  
-                  {/* Check if this row is skipped and render a single merged cell */}
-                  {result?.status === 'skipped' ? (
-                    <td 
-                      colSpan={fields.length}
-                      className="px-4 py-3 text-sm border-l border-border bg-muted/50"
-                    >
-                      <div className="flex flex-col items-start gap-1">
-                        <span className="inline-flex items-center px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs font-medium">
-                          Skipped
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {result.error || 'Personal email provider'}
-                        </span>
-                      </div>
-                    </td>
-                  ) : (
-                    fields.map((field, fieldIndex) => {
-                      const enrichment = result?.enrichments[field.name];
-                      const cellKey = `${index}-${field.name}`;
-                      
-                      // Check if this cell should be shown
-                      const isCellShown = cellsShown.has(cellKey);
-                      const rowArrivalTime = rowDataArrivalTime.get(index);
-                      const cellDelay = getCellAnimationDelay(index, fieldIndex);
-                      const shouldAnimate = rowArrivalTime && !isCellShown && (Date.now() - rowArrivalTime) < 2500;
-                      const shouldShowData = isCellShown || (rowArrivalTime && (Date.now() - rowArrivalTime) > cellDelay);
-                      
-                      return (
-                        <td 
-                          key={field.name} 
-                          className="px-4 py-2 text-sm relative border-l border-border"
-                        >
-                          {!result ? (
-                            <div className="animate-slow-pulse">
-                              <div className="h-4 bg-gradient-to-r from-muted to-muted/70 rounded-full w-3/4"></div>
-                            </div>
-                          ) : (!shouldShowData && shouldAnimate) ? (
-                            <div className="animate-slow-pulse">
-                              <div className="h-4 bg-gradient-to-r from-muted to-muted/70 rounded-full w-3/4"></div>
-                            </div>
-                          ) : result?.status === 'error' ? (
-                            <span className="inline-flex items-center px-2 py-1 bg-destructive/10 text-destructive rounded-full text-xs font-medium">
-                              Error
-                            </span>
-                          ) : !enrichment || enrichment.value === null || enrichment.value === undefined || enrichment.value === '' ? (
-                          <div 
-                            className={shouldAnimate && !isCellShown ? "animate-in fade-in slide-in-from-bottom-2" : ""}
-                            style={shouldAnimate && !isCellShown ? {
-                              animationDuration: '500ms',
-                              animationDelay: `${cellDelay}ms`,
-                              animationFillMode: 'both',
-                              animationTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                            } : {}}
-                          >
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <X size={16} />
-                              <span className="text-xs">No information found</span>
-                            </span>
+                      </td>
+
+                      {/* Field Columns */}
+                      {result?.status === 'skipped' ? (
+                        <td colSpan={fields.length} className="px-3 py-2 text-xs text-amber-400 italic border-r border-gray-700/30 bg-amber-900/5">
+                          <div className="flex items-center gap-1.5">
+                            <Info className="w-3 h-3" />
+                            <span>{result.error || 'Personal email provider'}</span>
                           </div>
-                        ) : (
-                          <div 
-                            className={shouldAnimate && !isCellShown ? "animate-in fade-in slide-in-from-bottom-2" : ""}
-                            style={shouldAnimate && !isCellShown ? {
-                              animationDuration: '500ms',
-                              animationDelay: `${cellDelay}ms`,
-                              animationFillMode: 'both',
-                              animationTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                            } : {}}
-                          >
-                            <div className="flex flex-col gap-1">
-                              <div className="font-medium text-foreground">
-                                {field.type === 'boolean' ? (
-                                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                                    enrichment.value === true || enrichment.value === 'true' || enrichment.value === 'Yes' 
-                                      ? 'bg-green-100 text-green-600' 
-                                      : 'bg-red-100 text-red-600'
-                                  }`}>
-                                    {enrichment.value === true || enrichment.value === 'true' || enrichment.value === 'Yes' ? '✓' : '✗'}
-                                  </span>
-                                ) : field.type === 'array' && Array.isArray(enrichment.value) ? (
+                        </td>
+                      ) : (
+                        fields.map((field, fieldIndex) => {
+                          const enrichment = result?.enrichments[field.name];
+                          const hasValue = enrichment && enrichment.value !== null && enrichment.value !== undefined && enrichment.value !== '';
+                          
+                          return (
+                            <td key={field.name} className="px-3 py-2 border-r border-gray-700/20 transition-colors">
+                              <div className="space-y-1">
+                                {!result ? (
                                   <div className="space-y-1">
-                                    {enrichment.value.slice(0, 2).map((item, i) => (
-                                      <span key={i} className="inline-block px-2 py-1 bg-primary/10 text-primary rounded-full text-xs mr-1">
-                                        {item}
-                                      </span>
-                                    ))}
-                                    {enrichment.value.length > 2 && (
-                                      <span className="text-xs text-muted-foreground font-medium"> +{enrichment.value.length - 2} more</span>
-                                    )}
+                                    <div className="h-3 bg-gray-800 rounded animate-pulse" />
+                                    <div className="h-2 bg-gray-800/70 rounded animate-pulse w-2/3" />
                                   </div>
+                                ) : hasValue ? (
+                                  <>
+                                    <div className="text-xs text-white break-words leading-tight">
+                                      {field.type === 'boolean' ? (
+                                        <span className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-xs font-medium ${
+                                          enrichment.value 
+                                            ? 'bg-green-500 text-white' 
+                                            : 'bg-red-500 text-white'
+                                        }`}>
+                                          {enrichment.value ? '✓' : '✗'}
+                                        </span>
+                                      ) : field.type === 'array' && Array.isArray(enrichment.value) ? (
+                                        <div className="flex flex-wrap gap-1">
+                                          {enrichment.value.slice(0, 2).map((item, i) => (
+                                            <span key={i} className="inline-block px-1.5 py-0.5 bg-blue-600 text-white rounded text-xs font-medium">
+                                              {item}
+                                            </span>
+                                          ))}
+                                          {enrichment.value.length > 2 && (
+                                            <span className="inline-block px-1.5 py-0.5 bg-gray-600 text-gray-300 rounded text-xs font-medium">
+                                              +{enrichment.value.length - 2}
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="break-words">{String(enrichment.value)}</div>
+                                      )}
+                                    </div>
+                                    {/* Minimal Source Citation */}
+                                    {(enrichment.sourceContext || enrichment.source) && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const sources = enrichment.sourceContext || [];
+                                          const sourceCount = sources.length || (enrichment.source ? 1 : 0);
+                                          setSourceModal({
+                                            isOpen: true,
+                                            url: '',
+                                            domain: '',
+                                            sources: sources,
+                                            count: sourceCount,
+                                            legacySource: enrichment.source
+                                          });
+                                        }}
+                                        className="inline-flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity duration-200 cursor-pointer group/source"
+                                        title={`View ${enrichment.sourceContext?.length || 1} source${(enrichment.sourceContext?.length || 1) > 1 ? 's' : ''}`}
+                                      >
+                                        <div className="w-1 h-1 bg-blue-400 rounded-full group-hover/source:bg-blue-300" />
+                                        <span className="text-xs text-gray-500 group-hover/source:text-gray-400">
+                                          {enrichment.sourceContext?.length || 1}
+                                        </span>
+                                      </button>
+                                    )}
+                                  </>
                                 ) : (
-                                  <div className="truncate max-w-xs" title={String(enrichment.value)}>
-                                    {enrichment.value || '-'}
+                                  <div className="text-xs text-gray-500 italic">
+                                    <span>—</span>
                                   </div>
                                 )}
                               </div>
-                              {(enrichment.source || enrichment.sourceContext) && (
-                                <div className="mt-1">
-                                  <SourceContextTooltip
-                                    sources={enrichment.sourceContext || []}
-                                    value={enrichment.value}
-                                    legacySource={enrichment.source}
-                                    sourceCount={enrichment.sourceCount}
-                                    corroboration={enrichment.corroboration}
-                                    confidence={enrichment.confidence}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                            </td>
+                          );
+                        })
+                      )}
+
+                      {/* Actions */}
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <button 
+                            className="w-6 h-6 p-0 text-gray-500 hover:text-white hover:bg-gray-700 rounded transition-all duration-150 flex items-center justify-center"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDetailSidebar(originalIndex);
+                            }}
+                            title="View details"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </button>
+                          <button 
+                            className="w-6 h-6 p-0 text-gray-500 hover:text-white hover:bg-gray-700 rounded transition-all duration-150 flex items-center justify-center"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyRowData(originalIndex);
+                            }}
+                            title={copiedRow === originalIndex ? "Copied!" : "Copy data"}
+                          >
+                            {copiedRow === originalIndex ? (
+                              <Check className="w-3 h-3 text-green-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
                       </td>
-                    );
-                  })
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {filteredRows.length === 0 && (
+              <div className="text-center py-20 text-gray-400">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+                    <Search className="w-8 h-8 text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold text-gray-300 mb-2">No results found</div>
+                    <div className="text-sm text-gray-500">Try adjusting your search or filter criteria</div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Summary */}
+        <div className="bg-gray-900 border-t border-gray-800 p-4">
+          <div className="flex justify-between items-center text-sm text-gray-400">
+            <div>
+              Showing {filteredRows.length} of {rows.length} contacts
+            </div>
+            <div className="flex gap-6">
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                Completed: {Array.from(results.values()).filter(r => r.status === 'completed').length}
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                Processing: {status === 'processing' ? 1 : 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                Failed: {Array.from(results.values()).filter(r => r.status === 'error').length}
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                Skipped: {Array.from(results.values()).filter(r => r.status === 'skipped').length}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Detail Sidebar */}
       <Sheet 
         open={selectedRow.isOpen} 
         onOpenChange={(open) => setSelectedRow({ ...selectedRow, isOpen: open })}
       >
-        <SheetContent className="w-[550px] sm:max-w-[550px] overflow-y-auto bg-zinc-950 border-l-2 border-zinc-900 px-8">
+        <SheetContent className="w-[550px] sm:max-w-[550px] overflow-y-auto bg-gray-950 border-l border-gray-800">
           {selectedRow.row && (
             <>
-              <SheetHeader className="pb-4 border-b border-zinc-800">
-                <SheetTitle className="text-2xl font-bold text-zinc-100">
+              <SheetHeader className="pb-4 border-b border-gray-800">
+                <SheetTitle className="text-xl font-bold text-white">
                   {emailColumn ? selectedRow.row[emailColumn] : Object.values(selectedRow.row)[0]}
                 </SheetTitle>
-                {/* Email and Website buttons */}
-                <div className="flex items-center gap-3 mt-3">
-                  {selectedRow.result && (
-                    <>
-                      {/* Website link */}
-                      {selectedRow.result.enrichments.website?.value && (
-                        <a
-                          href={String(selectedRow.result.enrichments.website.value)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-100 hover:text-zinc-300 flex items-center gap-1 text-sm font-medium"
-                        >
-                          <Globe size={16} />
-                          Website
-                        </a>
-                      )}
-                      {/* Email display */}
-                      {emailColumn && selectedRow.row[emailColumn] && (
-                        <span className="text-zinc-400 flex items-center gap-1 text-sm">
-                          <Mail size={16} />
-                          {selectedRow.row[emailColumn]}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
               </SheetHeader>
               
               <div className="mt-6 space-y-6">
                 {/* Enriched Fields */}
                 {selectedRow.result && (
                   <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="h-px flex-1 bg-zinc-800" />
-                      <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
-                        Enriched Data
-                      </h3>
-                      <div className="h-px flex-1 bg-zinc-800" />
-                    </div>
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                      Enriched Data
+                    </h3>
                     
                     <div className="space-y-3">
                       {fields.map((field) => {
                         const enrichment = selectedRow.result?.enrichments[field.name];
-                        if (!enrichment && enrichment !== null) return null;
                         
                         return (
-                          <Card key={field.name} className="p-4 bg-zinc-900 border-zinc-800">
+                          <Card key={field.name} className="p-4 bg-gray-900 border-gray-800">
                             <div className="flex items-start justify-between gap-2 mb-2">
-                              <Label className="text-sm font-semibold text-zinc-200">
+                              <Label className="text-sm font-semibold text-white">
                                 {field.displayName}
                               </Label>
                             </div>
                             
-                            <div className="text-zinc-200">
+                            <div>
                               {!enrichment || enrichment.value === null || enrichment.value === undefined || enrichment.value === '' ? (
-                                <div className="flex items-center gap-2 text-zinc-500 py-2">
+                                <div className="flex items-center gap-2 text-gray-500 py-2">
                                   <X size={16} />
                                   <span className="text-sm italic">No information found</span>
                                 </div>
                               ) : field.type === 'array' && Array.isArray(enrichment.value) ? (
                                 <div className="flex flex-wrap gap-1.5 mt-1">
                                   {enrichment.value.map((item, i) => (
-                                    <Badge key={i} variant="secondary" className="bg-purple-900/30 text-purple-300 border-purple-700/40">
+                                    <Badge key={i} variant="secondary" className="bg-gray-800 text-gray-300">
                                       {item}
                                     </Badge>
                                   ))}
@@ -929,8 +1089,8 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
                                 <Badge 
                                   variant={enrichment.value === true || enrichment.value === 'true' || enrichment.value === 'Yes' ? "default" : "secondary"}
                                   className={enrichment.value === true || enrichment.value === 'true' || enrichment.value === 'Yes' 
-                                    ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                                    : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                                    ? "bg-green-900/30 text-green-400" 
+                                    : "bg-red-900/30 text-red-400"
                                   }
                                 >
                                   {enrichment.value === true || enrichment.value === 'true' || enrichment.value === 'Yes' ? 'Yes' : 'No'}
@@ -946,100 +1106,56 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
                                   <ExternalLink size={12} />
                                 </a>
                               ) : (
-                                <p className="text-sm text-zinc-200 leading-relaxed">
+                                <p className="text-sm leading-relaxed text-gray-300">
                                   {enrichment.value}
                                 </p>
                               )}
                             </div>
                             
-                            {/* Corroboration Data */}
-                            {enrichment && enrichment.corroboration && (
-                              <div className="mt-3 pt-3 border-t border-zinc-800">
-                                <div className="flex items-center gap-2 mb-2">
-                                  {enrichment.corroboration.sources_agree ? (
-                                    <>
-                                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                      <span className="text-xs text-green-400 font-medium">All sources agree</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                                      <span className="text-xs text-amber-400 font-medium">Sources vary</span>
-                                    </>
-                                  )}
+                            {/* Source Links */}
+                            {enrichment && (enrichment.source || enrichment.sourceContext) && (
+                              <div className="mt-3 pt-3 border-t border-gray-800">
+                                <div className="mb-2">
+                                  <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Sources</span>
                                 </div>
-                                <div className="space-y-2">
-                                  {enrichment.corroboration.evidence
-                                    .filter(e => e.value !== null)
-                                    .map((evidence, idx) => (
-                                      <div key={idx} className="bg-zinc-800 rounded p-2 space-y-1">
-                                        <div className="flex items-start justify-between gap-2">
-                                          <a
-                                            href={evidence.source_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+                                <div className="flex flex-wrap gap-2">
+                                  {enrichment.sourceContext && enrichment.sourceContext.length > 0 ? (
+                                    enrichment.sourceContext.map((source, i) => {
+                                      try {
+                                        const domain = new URL(source.url).hostname.replace('www.', '');
+                                        return (
+                                          <button
+                                            key={i}
+                                            onClick={() => openSourceModal(source.url, domain, source.snippet)}
+                                            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white rounded-lg border border-gray-700 hover:border-gray-600 transition-all duration-200 cursor-pointer"
+                                            title={source.snippet || `Click to preview source: ${domain}`}
                                           >
-                                            {new URL(evidence.source_url).hostname} →
-                                          </a>
-                                        </div>
-                                        {evidence.exact_text && (
-                                          <p className="text-xs text-zinc-400 italic">
-                                            &quot;{evidence.exact_text}&quot;
-                                          </p>
-                                        )}
-                                        <p className="text-xs font-medium text-zinc-300">
-                                          Found: {JSON.stringify(evidence.value)}
-                                        </p>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Source Context (fallback if no corroboration) */}
-                            {enrichment && !enrichment.corroboration && enrichment.sourceContext && enrichment.sourceContext.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-zinc-800">
-                                <button
-                                  onClick={() => {
-                                    const sourceKey = `${field.name}-sources`;
-                                    setExpandedSources(prev => {
-                                      const newSet = new Set<string>(prev);
-                                      if (!prev.has(sourceKey)) {
-                                        newSet.add(sourceKey);
-                                      } else {
-                                        newSet.delete(sourceKey);
+                                            <Globe className="w-4 h-4" />
+                                            <span>{domain}</span>
+                                            <Eye className="w-3 h-3 opacity-60" />
+                                          </button>
+                                        );
+                                      } catch {
+                                        return null;
                                       }
-                                      return newSet;
-                                    });
-                                  }}
-                                  className="flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-zinc-300 transition-colors w-full"
-                                >
-                                  <Globe size={12} />
-                                  <span>Sources ({enrichment.sourceContext.length})</span>
-                                  {expandedSources.has(`${field.name}-sources`) ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                </button>
-                                {expandedSources.has(`${field.name}-sources`) && (
-                                  <div className="space-y-1.5 pl-4 mt-2">
-                                    {enrichment.sourceContext.map((source, idx) => (
-                                      <div key={idx} className="group">
-                                        <a 
-                                          href={source.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-start gap-2 text-xs text-blue-400 hover:text-blue-300"
-                                        >
-                                          <span className="text-zinc-600 flex-shrink-0">•</span>
-                                          <span className="break-all underline">{new URL(source.url).hostname}</span>
-                                          <ExternalLink size={10} className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </a>
-                                        {source.snippet && (
-                                          <p className="text-xs text-zinc-400 italic mt-0.5 pl-4 line-clamp-2">
-                                            &quot;{source.snippet}&quot;
-                                          </p>
-                                        )}
-                                      </div>
-                                    ))}
+                                    })
+                                  ) : enrichment.source ? (
+                                    <div className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 text-sm text-gray-300 rounded-lg border border-gray-700">
+                                      <Globe className="w-4 h-4" />
+                                      <span>Source Available</span>
+                                    </div>
+                                  ) : null}
+                                </div>
+                                {enrichment.confidence && (
+                                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
+                                    <span>Confidence:</span>
+                                    <span className={`font-medium ${
+                                      enrichment.confidence >= 0.8 ? 'text-green-400' :
+                                      enrichment.confidence >= 0.6 ? 'text-yellow-400' :
+                                      'text-red-400'
+                                    }`}>
+                                      {Math.round(enrichment.confidence * 100)}%
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -1053,23 +1169,19 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
                 
                 {/* Original Data */}
                 <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="h-px flex-1 bg-zinc-800" />
-                    <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">
-                      Original Data
-                    </h3>
-                    <div className="h-px flex-1 bg-zinc-800" />
-                  </div>
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    Original Data
+                  </h3>
                   
-                  <Card className="p-4 bg-zinc-900 border-zinc-800">
+                  <Card className="p-4 bg-gray-900 border-gray-800">
                     <div className="space-y-3">
                       {Object.entries(selectedRow.row).map(([key, value]) => (
                         <div key={key} className="flex items-start justify-between gap-4">
-                          <Label className="text-sm font-medium text-zinc-400 min-w-[120px]">
+                          <Label className="text-sm font-medium text-gray-400 min-w-[120px]">
                             {key}
                           </Label>
-                          <span className="text-sm text-zinc-200 text-right break-all">
-                            {value || <span className="italic text-zinc-500">Empty</span>}
+                          <span className="text-sm text-right break-all text-gray-300">
+                            {value || <span className="italic text-gray-500">Empty</span>}
                           </span>
                         </div>
                       ))}
@@ -1078,30 +1190,18 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
                 </div>
 
                 {/* Action Buttons */}
-                <div className="pt-6 pb-4 border-t border-zinc-800">
-                  <div className="flex gap-3">
-                    <Button
-                      variant="orange"
-                      className="flex-1"
-                      onClick={async () => {
-                        toast.info('Additional enrichment coming soon!');
-                      }}
-                    >
-                      Add More Information
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      className="flex-1 bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-900"
-                      onClick={() => {
-                        copyRowData(selectedRow.index);
-                        toast.success('Row data copied to clipboard!');
-                      }}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Row Data
-                    </Button>
-                  </div>
+                <div className="pt-6 pb-4 border-t border-gray-800">
+                  <Button
+                    variant="outline"
+                    className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                    onClick={() => {
+                      copyRowData(selectedRow.index);
+                      toast.success('Row data copied to clipboard!');
+                    }}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Row Data
+                  </Button>
                 </div>
               </div>
             </>
@@ -1109,146 +1209,71 @@ export function EnrichmentTable({ rows, fields, emailColumn }: EnrichmentTablePr
         </SheetContent>
       </Sheet>
 
-      {/* Skipped Emails Summary */}
-      {(() => {
-        const skippedResults = Array.from(results.entries())
-          .filter(([, result]) => result.status === 'skipped')
-          .map(([index, result]) => ({
-            index,
-            email: emailColumn ? rows[index][emailColumn] : '',
-            reason: result.error || 'Common email provider'
-          }));
-        
-        if (skippedResults.length === 0) return null;
-        
-        return (
-          <Card className="p-4 bg-muted/50 border-border mt-4">
-            <button
-              onClick={() => setShowSkipped(!showSkipped)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                  {skippedResults.length} Skipped
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Common email providers and domains excluded from enrichment
-                </span>
-              </div>
-              {showSkipped ? (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
-            
-            {showSkipped && (
-              <div className="mt-4 space-y-2">
-                <div className="text-xs text-muted-foreground mb-2">
-                  These emails were skipped to save API calls and processing time:
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {skippedResults.map(({ index, email, reason }) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between bg-card rounded-md px-3 py-2 text-sm border border-border"
-                    >
-                      <span className="font-mono text-foreground truncate">
-                        {email}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {reason}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-        );
-      })()}
-
-      {/* Email Generation Modal */}
-      <Sheet open={emailModal.isOpen} onOpenChange={(open) => !open && setEmailModal(prev => ({ ...prev, isOpen: false }))}>
-        <SheetContent className="w-[600px] sm:w-[700px] bg-card border-border">
-          <SheetHeader className="pb-4">
-            <SheetTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-              <Send className="w-5 h-5 text-green-400" />
-              Personalized Email
+            {/* Sources List Modal */}
+      <Sheet 
+        open={sourceModal.isOpen} 
+        onOpenChange={(open) => setSourceModal(prev => ({ ...prev, isOpen: open }))}
+      >
+        <SheetContent className="w-[500px] sm:max-w-[500px] bg-gray-950 border-l border-gray-800">
+          <SheetHeader className="pb-4 border-b border-gray-800">
+            <SheetTitle className="text-lg font-bold text-white flex items-center gap-2">
+              <Globe className="w-5 h-5 text-blue-400" />
+              Sources ({sourceModal.count || 0})
             </SheetTitle>
           </SheetHeader>
           
-          {emailModal.email && (
-            <div className="space-y-6">
-              {/* Email Subject */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Subject Line</Label>
-                <div className="p-3 bg-muted/50 rounded-lg border border-border">
-                  <p className="text-sm text-foreground font-medium">{emailModal.email.subject}</p>
+          <div className="mt-6 space-y-3">
+            {sourceModal.sources && sourceModal.sources.length > 0 ? (
+              sourceModal.sources.map((source, i) => {
+                try {
+                  const domain = new URL(source.url).hostname.replace('www.', '');
+                  return (
+                    <div key={i} className="p-4 bg-gray-900 rounded-lg border border-gray-800 hover:border-gray-700 transition-colors">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-white mb-1">{domain}</div>
+                          <div className="text-xs text-gray-400 font-mono break-all">{source.url}</div>
+                        </div>
+                        <Button
+                          onClick={() => window.open(source.url, '_blank')}
+                          variant="outline"
+                          size="sm"
+                          className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 flex-shrink-0"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      {source.snippet && (
+                        <div className="text-xs text-gray-300 leading-relaxed mt-2 p-2 bg-gray-800/50 rounded border-l-2 border-blue-500/30">
+                          &ldquo;{source.snippet}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  );
+                } catch {
+                  return null;
+                }
+              })
+            ) : sourceModal.legacySource ? (
+              <div className="p-4 bg-gray-900 rounded-lg border border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-300">Source Available</span>
+                  </div>
                 </div>
+                <div className="text-xs text-gray-400 mt-1">{sourceModal.legacySource}</div>
               </div>
-
-              {/* Email Body */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Email Body</Label>
-                <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                  <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-                    {emailModal.email.body}
-                  </pre>
-                </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No sources available</p>
               </div>
-
-              {/* Personalization Details */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Personalization Strategy</Label>
-                <div className="p-3 bg-muted/50 rounded-lg border border-border">
-                  <p className="text-xs text-muted-foreground">{emailModal.email.reasoning}</p>
-                </div>
-              </div>
-
-              {/* Confidence Score */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-foreground">Confidence Score</Label>
-                  <Badge className="bg-primary/20 text-primary border-primary/30">
-                    {Math.round(emailModal.email.confidence * 100)}%
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-foreground">Tone</Label>
-                  <Badge className="bg-secondary/20 text-secondary-foreground border-secondary/30 capitalize">
-                    {emailModal.email.tone}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`Subject: ${emailModal.email?.subject}\n\n${emailModal.email?.body}`);
-                    toast.success('Email copied to clipboard!');
-                  }}
-                  className="flex-1 bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy Email
-                </Button>
-                <Button
-                  onClick={() => {
-                    const mailtoLink = `mailto:${emailColumn ? rows[emailModal.rowIndex][emailColumn] : ''}?subject=${encodeURIComponent(emailModal.email?.subject || '')}&body=${encodeURIComponent(emailModal.email?.body || '')}`;
-                    window.open(mailtoLink);
-                  }}
-                  className="flex-1 bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-500/30"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  Open in Email
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }

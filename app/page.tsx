@@ -56,6 +56,20 @@ export default function HomePage() {
     resetProcess();
   };
 
+  // Full-screen enrichment view
+  if (step === 'enrichment' && csvData) {
+    return (
+      <div className="fixed inset-0 bg-gray-950">
+        <EnrichmentTable
+          rows={csvData.rows}
+          fields={selectedFields}
+          emailColumn={emailColumn}
+          onReset={resetProcess}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar onLogoClick={handleLogoClick} />
@@ -129,13 +143,13 @@ export default function HomePage() {
               fill="none"
               className="animate-draw-line [animation-delay:2s]"
             />
-          </svg>
+            </svg>
           
           {/* Floating data particles */}
           <div className="absolute top-20 left-1/4 w-32 h-32 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-float"></div>
           <div className="absolute top-40 right-1/4 w-24 h-24 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-full blur-2xl animate-float [animation-delay:1s]"></div>
           <div className="absolute bottom-20 left-1/3 w-28 h-28 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-full blur-3xl animate-float [animation-delay:2s]"></div>
-        </div>
+      </div>
 
         {/* Main Headline */}
         <h1 className="relative text-[3.5rem] lg:text-[5rem] xl:text-[6rem] text-white font-bold tracking-tight leading-[0.85] mb-8 opacity-0 animate-fade-up [animation-duration:700ms] [animation-delay:200ms] [animation-fill-mode:forwards]">
@@ -212,12 +226,12 @@ export default function HomePage() {
             </span>
           </Button>
           <p className="text-base text-gray-300 mt-6 font-medium">
-            {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 
+          {FIRE_ENRICH_CONFIG.FEATURES.IS_UNLIMITED ? 
               '✨ No limits • No signup required' : 
               `✨ Up to ${FIRE_ENRICH_CONFIG.CSV_LIMITS.MAX_ROWS} contacts free • No signup required`
-            }
-          </p>
-        </div>
+          }
+        </p>
+      </div>
         </div>
       )}
 
@@ -237,12 +251,12 @@ export default function HomePage() {
           </div>
         )}
         
-        {isCheckingEnv ? (
-          <div className="text-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground">Initializing...</p>
-          </div>
-        ) : (
+      {isCheckingEnv ? (
+        <div className="text-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Initializing...</p>
+        </div>
+      ) : (
           <div className="bg-card p-4 sm:p-6 rounded-lg shadow-lg border border-border">
         {step === 'setup' && (
           <Button
@@ -268,35 +282,13 @@ export default function HomePage() {
           />
         )}
 
-        {step === 'enrichment' && csvData && (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold mb-1">Enrichment Results</h2>
-              <p className="text-sm text-muted-foreground">
-                Click on any row to view detailed information
-              </p>
-            </div>
-            <EnrichmentTable
-              rows={csvData.rows}
-              fields={selectedFields}
-              emailColumn={emailColumn}
-            />
-            <div className="mt-6 text-center">
-              <Button
-                variant="orange"
-                onClick={resetProcess}
-              >
-                Start New Enrichment
-              </Button>
-            </div>
-          </>
-        )}
+
         </div>
       )}
       </div>
 
-        {/* API Key Modal removed */}
-        </div>
+      {/* API Key Modal removed */}
+    </div>
       </main>
       <Footer />
     </>

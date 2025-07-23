@@ -137,35 +137,80 @@ function extractDescription(result: ScrapeResult): string | null {
   const markdown = result.markdown || '';
   const metadata = result.metadata || {};
   
-  // Try meta description first
+  // Try meta description first (most reliable)
   if (metadata.description && typeof metadata.description === 'string' && metadata.description.length > 20) {
-    return metadata.description as string;
+    const cleaned = (metadata.description as string).trim();
+    if (cleaned.length > 30 && cleaned.length < 500) {
+      return cleaned;
+    }
   }
   
-  // Look for mission/about sections
+  // Enhanced patterns for finding company descriptions
   const patterns = [
-    /(?:Our\s+)?(?:Mission|Vision|About|Who\s+We\s+Are)[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
-    /We\s+(?:are|help|provide|build|create)\s+([^\n]+(?:\n[^\n]+){0,2})/i,
-    /^([A-Z][^.!?]+(?:help|provide|build|create|enable|empower)[^.!?]+[.!?])/m,
+    // About sections with more variations
+    /(?:About\s+(?:Us|Our\s+Company|[A-Z][a-z]+))[\s:]+([^\n]+(?:\n[^\n]+){0,3})/i,
+    /(?:Our\s+)?(?:Mission|Vision|Purpose|Story)[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
+    /What\s+We\s+Do[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
+    /Who\s+We\s+Are[\s:]+([^\n]+(?:\n[^\n]+){0,2})/i,
+    
+    // Company action patterns
+    /We\s+(?:are|help|provide|build|create|enable|empower|offer|deliver|specialize|focus)\s+([^\n.!?]+[.!?])/i,
+    /(?:^|\n)([A-Z][^.!?]*(?:helps?|provides?|builds?|creates?|enables?|empowers?|offers?|delivers?|specializes?)[^.!?]*[.!?])/m,
+    /(?:^|\n)([A-Z][^.!?]*(?:platform|solution|service|software|technology|tool|system)[^.!?]*[.!?])/m,
+    
+    // Leading/innovative company patterns
+    /(?:^|\n)([A-Z][^.!?]*(?:leading|premier|top|innovative|cutting-edge)[^.!?]*(?:company|provider|solution|platform)[^.!?]*[.!?])/m,
+    
+    // Company name + description pattern
+    /(?:^|\n)([A-Z][a-zA-Z\s&.]+\s+(?:is|was)\s+[^.!?]+[.!?])/m,
+    
+    // Industry-specific patterns
+    /(?:^|\n)([A-Z][^.!?]*(?:SaaS|AI|machine learning|fintech|healthcare|e-commerce|marketplace)[^.!?]*[.!?])/m,
   ];
   
   for (const pattern of patterns) {
     const match = markdown.match(pattern);
-    if (match) {
+    if (match && match[1]) {
       const desc = match[1].trim()
         .replace(/\n+/g, ' ')
-        .replace(/\s+/g, ' ');
+        .replace(/\s+/g, ' ')
+        .replace(/^\s*[-•]\s*/, '') // Remove bullet points
+        .replace(/^[A-Z][a-z]+\s+is\s+/, ''); // Remove "Company is" prefix
       
-      if (desc.length > 30 && desc.length < 500) {
+      // Validate description quality
+      if (desc.length > 30 && desc.length < 500 && 
+          !desc.toLowerCase().includes('lorem ipsum') &&
+          !desc.toLowerCase().includes('placeholder') &&
+          !desc.toLowerCase().includes('coming soon') &&
+          desc.split(' ').length > 5) {
         return desc;
       }
     }
   }
   
-  // Fall back to first substantive paragraph
-  const paragraphs = markdown.split(/\n\n+/).filter((p) => p.length > 50);
+  // Enhanced fallback to first substantive paragraph
+  const paragraphs = markdown.split(/\n\s*\n/).filter(p => {
+    const cleaned = p.trim();
+    const lowerCleaned = cleaned.toLowerCase();
+    
+    return cleaned.length > 50 && 
+           cleaned.length < 500 &&
+           !lowerCleaned.includes('cookie') &&
+           !lowerCleaned.includes('privacy') &&
+           !lowerCleaned.includes('terms of service') &&
+           !lowerCleaned.includes('copyright') &&
+           !lowerCleaned.includes('all rights reserved') &&
+           !lowerCleaned.includes('navigation') &&
+           !lowerCleaned.includes('menu') &&
+           cleaned.split(' ').length > 8 &&
+           cleaned.split('.').length <= 4; // Not too many sentences
+  });
+  
   if (paragraphs.length > 0) {
-    return paragraphs[0].substring(0, 300).trim();
+    const firstPara = paragraphs[0].trim()
+      .replace(/\n+/g, ' ')
+      .replace(/\s+/g, ' ');
+    return firstPara.substring(0, 400);
   }
   
   return null;

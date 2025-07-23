@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans`}>
         <div className="min-h-screen flex flex-col">
-          {children}
+        {children}
         </div>
         <Toaster />
       </body>

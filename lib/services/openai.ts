@@ -233,14 +233,15 @@ Fields to extract for the TARGET ENTITY ONLY:
 ${fieldDescriptions}
 
 ADDITIONAL GUIDELINES:
-1. Employee Count: Must be explicitly stated. Look for phrases like "X employees", "team of X", "X people". If not found, return null.
-2. Funding Stage: Must be explicitly mentioned (e.g., "raised Series A", "seed funding"). If not found, return null.
-3. Revenue: Must be explicitly stated with numbers. If not found, return null.
-4. Year Founded: Must be explicitly mentioned (e.g., "founded in X", "established X"). If not found, return null.
-5. DO NOT use general knowledge or make educated guesses.
-6. DO NOT fill in values based on what seems likely.
-7. ONLY extract what is ACTUALLY WRITTEN in the provided content.
-8. When multiple sources mention the same field, extract the ACTUAL QUOTE from EACH source - do not copy the same quote to multiple sources.
+1. Company Description: Look for meta descriptions, about sections, mission statements, or "We are/help/provide/build" statements. Extract meaningful descriptions that explain what the company does, NOT generic statements like "operates the domain". If no real description is found, return null.
+2. Employee Count: Must be explicitly stated. Look for phrases like "X employees", "team of X", "X people". If not found, return null.
+3. Funding Stage: Must be explicitly mentioned (e.g., "raised Series A", "seed funding"). If not found, return null.
+4. Revenue: Must be explicitly stated with numbers. If not found, return null.
+5. Year Founded: Must be explicitly mentioned (e.g., "founded in X", "established X"). If not found, return null.
+6. DO NOT use general knowledge or make educated guesses.
+7. DO NOT fill in values based on what seems likely.
+8. ONLY extract what is ACTUALLY WRITTEN in the provided content.
+9. When multiple sources mention the same field, extract the ACTUAL QUOTE from EACH source - do not copy the same quote to multiple sources.
 
 REMEMBER: It is better to return null than to guess or make up information.
 
@@ -411,7 +412,8 @@ DOMAIN PARKING/SALE PAGES:
     - Industry names should be capitalized (e.g., "Technology", "Healthcare", "Finance")
     - Company names should use proper casing (e.g., "OneTrust" not "onetrust")
     - Job titles should be capitalized (e.g., "Chief Executive Officer", "VP of Sales")
-13. **CRITICAL URL VALIDATION**:
+13. For Company Description: Extract meaningful descriptions that explain what the company does, NOT generic statements like "operates the domain". Look for meta descriptions, about sections, mission statements, or "We are/help/provide/build" statements. If no real description is found, return null.
+14. **CRITICAL URL VALIDATION**:
     - ONLY use URLs that appear after "URL:" in the content
     - DO NOT invent or guess URLs
     - DO NOT modify or create URLs based on company names
@@ -865,6 +867,70 @@ Generate new search queries to find: ${targetField}`,
     } catch (error) {
       console.error('Query generation error:', error);
       return [];
+    }
+  }
+
+  /**
+   * Generate a natural-language question for a field and company.
+   */
+  private generateQuestion(companyName: string, field: EnrichmentField): string {
+    const fieldName = field.name.toLowerCase();
+    if (fieldName.includes('ceo')) {
+      return `Who is the CEO of ${companyName}?`;
+    }
+    if (fieldName.includes('founder')) {
+      return `Who is the founder of ${companyName}?`;
+    }
+    if (fieldName.includes('founded') || fieldName.includes('year')) {
+      return `What year was ${companyName} founded?`;
+    }
+    if (fieldName.includes('industry')) {
+      return `What industry is ${companyName} in?`;
+    }
+    if (fieldName.includes('headquarters') || fieldName.includes('location')) {
+      return `Where is the headquarters of ${companyName}?`;
+    }
+    if (fieldName.includes('product')) {
+      return `What is the main product of ${companyName}?`;
+    }
+    // Fallback for custom fields
+    return `What is the ${field.displayName} (${field.description}) for ${companyName}?`;
+  }
+
+  /**
+   * Fallback: Ask the LLM for its best guess for a field, even if it can't cite a source.
+   * Used when no answer is found in crawled content.
+   */
+  async guessFieldValue(
+    companyName: string,
+    field: EnrichmentField
+  ): Promise<import('../types').EnrichmentResult | null> {
+    try {
+      const question = this.generateQuestion(companyName, field);
+      const prompt = `You are an expert business data assistant. ${question} Respond with only the value.`;
+      console.log('[OpenAIService] LLM fallback prompt:', prompt);
+      const response = await this.client.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant for business data enrichment.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 64,
+        temperature: 0.2
+      });
+      const value = response.choices[0].message.content?.trim();
+      console.log('[OpenAIService] LLM fallback raw response:', value);
+      if (!value || value.toLowerCase() === 'unknown') return null;
+      return {
+        field: field.name,
+        value: value,
+        confidence: 0.3,
+        source: 'LLM fallback (no evidence)',
+        sourceContext: []
+      };
+    } catch (err) {
+      console.error('[OpenAIService] LLM fallback guess failed:', err);
+      return null;
     }
   }
 }

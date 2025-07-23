@@ -1,0 +1,11 @@
+{
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/*/route.ts": {
+      "maxDuration": 300
+    }
+  }
+} 

@@ -70,32 +70,32 @@ export default function HomePage() {
           {/* Data rows being enriched */}
           <div className="absolute top-16 left-8 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:1s]">
             <div className="text-xs text-gray-400 mb-1">Contact #1</div>
-            <div className="text-sm text-white">john@company.com</div>
-            <div className="text-xs text-green-400 mt-1 animate-pulse">✓ Phone: +1 (555) 123-4567</div>
+            <div className="text-sm text-white">john@stripe.com</div>
+            <div className="text-xs text-green-400 mt-1 animate-pulse">✓ CEO: Patrick Collison</div>
           </div>
           
           <div className="absolute top-32 right-12 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:2s]">
             <div className="text-xs text-gray-400 mb-1">Contact #2</div>
-            <div className="text-sm text-white">sarah@startup.io</div>
-            <div className="text-xs text-blue-400 mt-1 animate-pulse">✓ LinkedIn: /in/sarah-johnson</div>
+            <div className="text-sm text-white">sarah@notion.so</div>
+            <div className="text-xs text-blue-400 mt-1 animate-pulse">✓ Mission: Make toolmaking ubiquitous</div>
           </div>
           
           <div className="absolute top-48 left-16 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:3s]">
             <div className="text-xs text-gray-400 mb-1">Contact #3</div>
-            <div className="text-sm text-white">mike@techcorp.com</div>
-            <div className="text-xs text-purple-400 mt-1 animate-pulse">✓ Company: TechCorp Inc.</div>
+            <div className="text-sm text-white">mike@shopify.com</div>
+            <div className="text-xs text-purple-400 mt-1 animate-pulse">✓ Products: E-commerce Platform</div>
           </div>
           
           <div className="absolute bottom-32 right-8 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:4s]">
             <div className="text-xs text-gray-400 mb-1">Contact #4</div>
-            <div className="text-sm text-white">alex@design.co</div>
-            <div className="text-xs text-pink-400 mt-1 animate-pulse">✓ Twitter: @alexdesigner</div>
+            <div className="text-sm text-white">alex@figma.com</div>
+            <div className="text-xs text-pink-400 mt-1 animate-pulse">✓ Category: Design & Collaboration</div>
           </div>
           
           <div className="absolute bottom-16 left-24 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700/50 animate-fade-in-up [animation-delay:5s]">
             <div className="text-xs text-gray-400 mb-1">Contact #5</div>
-            <div className="text-sm text-white">emma@marketing.com</div>
-            <div className="text-xs text-cyan-400 mt-1 animate-pulse">✓ Title: Marketing Director</div>
+            <div className="text-sm text-white">emma@airtable.com</div>
+            <div className="text-xs text-cyan-400 mt-1 animate-pulse">✓ CEO: Howie Liu</div>
           </div>
           
           {/* API call indicators */}

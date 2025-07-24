@@ -57,6 +57,7 @@ export function createSmartSearchTool(firecrawlApiKey: string, searchType: Searc
             scrapeOptions: {
               formats: ['markdown'],
               onlyMainContent: true,
+              maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
             }
           });
           

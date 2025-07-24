@@ -27,6 +27,7 @@ export class FirecrawlService {
         if (scrapeContent) {
           searchOptions.scrapeOptions = {
             formats: ['markdown', 'links', 'html'],
+            maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
           };
         }
 
@@ -111,6 +112,7 @@ export class FirecrawlService {
         const result = await this.app.scrapeUrl(fullUrl, {
           formats: ['markdown', 'html'],
           timeout: 30000, // 30 second timeout
+          maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
         });
         
         return result;
@@ -129,6 +131,7 @@ export class FirecrawlService {
               formats: ['markdown', 'html'],
               skipTlsVerification: true,
               timeout: 30000,
+              maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
             });
             return result;
           } catch (retryError) {

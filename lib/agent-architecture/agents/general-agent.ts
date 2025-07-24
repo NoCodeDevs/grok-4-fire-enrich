@@ -10,7 +10,7 @@ interface GeneralAgentContext {
 }
 
 interface GeneralAgentTools {
-  search: (query: string, options?: { limit?: number; scrapeOptions?: { formats?: string[] } }) => Promise<SearchResult[]>;
+  search: (query: string, options?: { limit?: number; scrapeOptions?: { formats?: string[]; maxAge?: number } }) => Promise<SearchResult[]>;
   scrape: (url: string) => Promise<ScrapeResult>;
   extractStructuredData: (content: string, fields: EnrichmentField[], context: unknown) => Promise<Record<string, EnrichmentResult>>;
 }
@@ -73,7 +73,10 @@ export class GeneralAgent {
           console.log(`[AGENT-GENERAL] Searching: ${query}`);
           const searchResults = await this.tools.search(query, { 
             limit: 3,
-            scrapeOptions: { formats: ['markdown'] }
+            scrapeOptions: { 
+              formats: ['markdown'],
+              maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
+            }
           });
           
           if (searchResults && searchResults.length > 0) {

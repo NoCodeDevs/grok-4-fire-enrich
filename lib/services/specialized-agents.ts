@@ -16,9 +16,12 @@ const createSpecializedSearchTool = (firecrawl: FirecrawlApp) => tool({
     
     for (const query of queries) {
       try {
-        const options: { limit: number; scrapeOptions?: { formats: string[] } } = { limit: 3 };
+        const options: { limit: number; scrapeOptions?: { formats: string[]; maxAge?: number } } = { limit: 3 };
         if (scrapeContent) {
-          options.scrapeOptions = { formats: ['markdown'] };
+          options.scrapeOptions = { 
+            formats: ['markdown'],
+            maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
+          };
         }
         
         const results = await firecrawl.search(query, options);

@@ -35,6 +35,7 @@ export function createWebsiteScraperTool(firecrawlApiKey: string, onProgress?: (
           formats: ['markdown', 'html'],
           onlyMainContent: true,
           waitFor: 2000, // Wait for dynamic content
+          maxAge: 3600000, // Use cached data if less than 1 hour old (500% faster)
         });
         
         if (!result.success) {
